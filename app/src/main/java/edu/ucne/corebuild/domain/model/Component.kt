@@ -20,6 +20,8 @@ sealed class Component {
         val baseClock: String,
         val boostClock: String,
         val tdp: String,
+        val cache: String? = null,
+        val integratedGraphics: String? = null,
         override val category: String = "Procesador"
     ) : Component()
 
@@ -33,6 +35,8 @@ sealed class Component {
         val vram: String,
         val vramType: String,
         val recommendedWattage: String,
+        val pcieInterface: String? = null,
+        val length: String? = null,
         override val category: String = "Tarjeta Gráfica"
     ) : Component()
 
@@ -46,6 +50,8 @@ sealed class Component {
         val chipset: String,
         val format: String,
         val ramType: String,
+        val maxRamCapacity: String? = null,
+        val slotsM2: Int? = null,
         override val category: String = "Placa Base"
     ) : Component()
 
@@ -59,6 +65,8 @@ sealed class Component {
         val capacity: String,
         val speed: String,
         val latency: String,
+        val voltage: String? = null,
+        val hasRGB: Boolean? = null,
         override val category: String = "Memoria RAM"
     ) : Component()
 
@@ -71,6 +79,8 @@ sealed class Component {
         val wattage: Int,
         val certification: String,
         val modularity: String,
+        val fanSize: String? = null,
+        val protection: String? = null,
         override val category: String = "Fuente de Poder"
     ) : Component()
 }
