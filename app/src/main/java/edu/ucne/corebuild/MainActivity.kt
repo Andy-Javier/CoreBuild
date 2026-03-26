@@ -9,11 +9,15 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.SettingsSuggest
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,92 +53,128 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoreBuildAppContent() {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    val items = listOf(
-        NavigationItem("Inicio", Icons.Default.Home, Screen.Home),
-        NavigationItem("Carrito", Icons.Default.ShoppingCart, Screen.Cart),
-        NavigationItem("Comparador", Icons.Default.Info, Screen.Comparator),
-        NavigationItem("Cuello de Botella", Icons.Default.Build, Screen.Bottleneck)
-    )
-
-    var selectedItem by remember { mutableStateOf(items[0]) }
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                Spacer(modifier = Modifier.height(16.dp))
+            ModalDrawerSheet(
+                drawerContainerColor = MaterialTheme.colorScheme.surface,
+                drawerTonalElevation = 4.dp
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Column(
+                    modifier = Modifier.padding(horizontal = 28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Build,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "CoreBuild",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Build your dream PC",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                    label = { Text("Inicio") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Home) {
+                            popUpTo(Screen.Home) { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Compare, contentDescription = null) },
+                    label = { Text("Comparador") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Comparator)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Speed, contentDescription = null) },
+                    label = { Text("Calculadora Cuello Botella") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Bottleneck)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
+                
                 Text(
-                    "CoreBuild",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.headlineMedium,
+                    "Apariencia",
+                    modifier = Modifier.padding(start = 28.dp, top = 16.dp, bottom = 12.dp),
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                HorizontalDivider()
                 
-                Column(modifier = Modifier.weight(1f)) {
-                    items.forEach { item ->
-                        NavigationDrawerItem(
-                            label = { Text(item.title) },
-                            selected = item == selectedItem,
-                            onClick = {
-                                selectedItem = item
-                                scope.launch { drawerState.close() }
-                                navController.navigate(item.screen) {
-                                    popUpTo(Screen.Home) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    val modes = listOf(
+                        Triple(ThemeMode.LIGHT, Icons.Outlined.LightMode, "Claro"),
+                        Triple(ThemeMode.SYSTEM, Icons.Outlined.SettingsSuggest, "Auto"),
+                        Triple(ThemeMode.DARK, Icons.Outlined.DarkMode, "Oscuro")
+                    )
+                    
+                    modes.forEachIndexed { index, (mode, icon, label) ->
+                        SegmentedButton(
+                            selected = ThemeSettings.themeState == mode,
+                            onClick = { ThemeSettings.themeState = mode },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                            icon = {
+                                SegmentedButtonDefaults.Icon(active = ThemeSettings.themeState == mode) {
+                                    Icon(icon, contentDescription = label)
                                 }
                             },
-                            icon = { Icon(item.icon, contentDescription = null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
-
-                HorizontalDivider()
-                Text(
-                    "Apariencia",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ThemeOption(
-                        icon = Icons.Default.LightMode,
-                        selected = ThemeSettings.themeState == ThemeMode.LIGHT,
-                        onClick = { ThemeSettings.themeState = ThemeMode.LIGHT }
-                    )
-                    ThemeOption(
-                        icon = Icons.Default.DarkMode,
-                        selected = ThemeSettings.themeState == ThemeMode.DARK,
-                        onClick = { ThemeSettings.themeState = ThemeMode.DARK }
-                    )
-                    ThemeOption(
-                        icon = Icons.Default.SettingsSuggest,
-                        selected = ThemeSettings.themeState == ThemeMode.SYSTEM,
-                        onClick = { ThemeSettings.themeState = ThemeMode.SYSTEM }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     ) {
         NavHost(
-            navController = navController,
+            navController = navController, 
             startDestination = Screen.Home,
-            enterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) }
+            enterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)) { it } },
+            exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) { -it } },
+            popEnterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)) { -it } },
+            popExitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) { it } }
         ) {
             composable<Screen.Home> {
                 HomeScreen(
@@ -143,7 +183,6 @@ fun CoreBuildAppContent() {
                     },
                     onCartClick = {
                         navController.navigate(Screen.Cart)
-                        selectedItem = items[1]
                     },
                     onMenuClick = {
                         scope.launch { drawerState.open() }
@@ -154,21 +193,13 @@ fun CoreBuildAppContent() {
                 val detail: Screen.Detail = backStackEntry.toRoute()
                 ProductDetailScreen(
                     id = detail.id,
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onCartClick = {
-                        navController.navigate(Screen.Cart)
-                        selectedItem = items[1]
-                    }
+                    onBackClick = { navController.popBackStack() },
+                    onCartClick = { navController.navigate(Screen.Cart) }
                 )
             }
             composable<Screen.Cart> {
                 CartScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                        selectedItem = items[0]
-                    }
+                    onBackClick = { navController.popBackStack() }
                 )
             }
             composable<Screen.Comparator> {
@@ -188,26 +219,3 @@ fun CoreBuildAppContent() {
         }
     }
 }
-
-@Composable
-fun ThemeOption(
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Icon(icon, contentDescription = null) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-    )
-}
-
-data class NavigationItem(
-    val title: String,
-    val icon: ImageVector,
-    val screen: Any
-)

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,14 +20,18 @@ class CartViewModel @Inject constructor(
     private val compatibilityEngine: CompatibilityEngine
 ) : ViewModel() {
 
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+
     val uiState: StateFlow<CartUiState> = combine(
         cartRepository.getCartItems(),
-        cartRepository.getCartTotal()
-    ) { items, total ->
+        cartRepository.getCartTotal(),
+        _snackbarMessage
+    ) { items, total, message ->
         CartUiState(
             cartItems = items,
             total = total,
-            warnings = compatibilityEngine.checkCompatibility(items)
+            warnings = compatibilityEngine.checkCompatibility(items),
+            snackbarMessage = message
         )
     }.stateIn(
         scope = viewModelScope,
@@ -39,12 +44,25 @@ class CartViewModel @Inject constructor(
             when (event) {
                 is CartEvent.RemoveFromCart -> {
                     cartRepository.removeComponent(event.componentId)
+                    _snackbarMessage.value = "Producto eliminado"
                 }
                 is CartEvent.UpdateQuantity -> {
-                    cartRepository.updateQuantity(event.componentId, event.quantity)
+                    val item = uiState.value.cartItems.find { it.component.id == event.componentId }
+                    if (item != null) {
+                        val limit = compatibilityEngine.getLimitForCategory(item.component)
+                        if (event.quantity > limit) {
+                            _snackbarMessage.value = "Límite alcanzado: Máximo $limit unidades"
+                        } else {
+                            cartRepository.updateQuantity(event.componentId, event.quantity)
+                        }
+                    }
                 }
                 CartEvent.ClearCart -> {
                     cartRepository.clearCart()
+                    _snackbarMessage.value = "Carrito vaciado"
+                }
+                CartEvent.DismissSnackbar -> {
+                    _snackbarMessage.value = null
                 }
             }
         }

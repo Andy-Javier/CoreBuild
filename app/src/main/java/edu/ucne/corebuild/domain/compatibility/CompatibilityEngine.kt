@@ -48,9 +48,9 @@ class CompatibilityEngine @Inject constructor() {
         return warnings
     }
 
-    private fun getLimitForCategory(component: Component): Int {
+    fun getLimitForCategory(component: Component): Int {
         return when (component) {
-            is Component.CPU -> 1
+            is Component.CPU -> 3
             is Component.Motherboard -> 1
             is Component.GPU -> 2
             is Component.RAM -> 4

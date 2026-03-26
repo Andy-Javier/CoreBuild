@@ -7,8 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,8 +25,17 @@ fun CartScreen(
     onBackClick: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.snackbarMessage) {
+        state.snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(CartEvent.DismissSnackbar)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Carrito de Compras") },
@@ -54,7 +65,7 @@ fun CartScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             state.warnings.forEach { warning ->
                                 Text(
@@ -105,7 +116,10 @@ fun CartItemRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -114,27 +128,47 @@ fun CartItemRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.component.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = item.component.name, 
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
                 Text(
                     text = "$${String.format("%.2f", item.component.price)} c/u",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onUpdateQuantity(item.component.id, item.quantity - 1) }) {
-                    Text("-", style = MaterialTheme.typography.headlineSmall)
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { onUpdateQuantity(item.component.id, item.quantity - 1) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Disminuir", modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            text = item.quantity.toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        IconButton(
+                            onClick = { onUpdateQuantity(item.component.id, item.quantity + 1) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
-                Text(
-                    text = item.quantity.toString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                IconButton(onClick = { onUpdateQuantity(item.component.id, item.quantity + 1) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Aumentar")
-                }
+                
                 Spacer(modifier = Modifier.width(8.dp))
+                
                 IconButton(onClick = { onRemove(item.component.id) }) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                 }
@@ -149,15 +183,21 @@ fun CartSummary(
     onClearCart: () -> Unit
 ) {
     Surface(
-        tonalElevation = 4.dp,
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Total:", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = "Total a Pagar", 
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Text(
                     text = "$${String.format("%.2f", total)}",
                     style = MaterialTheme.typography.headlineSmall,
@@ -165,19 +205,27 @@ fun CartSummary(
                     fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(), 
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedButton(
                     onClick = onClearCart,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = MaterialTheme.shapes.large
                 ) {
-                    Text("Vaciar Carrito")
+                    Icon(Icons.Default.DeleteSweep, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Vaciar")
                 }
                 Button(
                     onClick = { /* Implementar Checkout */ },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1.3f).height(48.dp),
+                    shape = MaterialTheme.shapes.large,
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
-                    Text("Pagar")
+                    Text("Pagar Ahora")
                 }
             }
         }

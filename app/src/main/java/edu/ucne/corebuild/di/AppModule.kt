@@ -14,6 +14,7 @@ import edu.ucne.corebuild.data.repository.CartRepositoryImpl
 import edu.ucne.corebuild.data.repository.ComponentRepositoryImpl
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import javax.inject.Singleton
 
 @Module
@@ -46,7 +47,13 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideCartRepository(): CartRepository {
-        return CartRepositoryImpl()
+    fun provideCompatibilityEngine(): CompatibilityEngine {
+        return CompatibilityEngine()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCartRepository(compatibilityEngine: CompatibilityEngine): CartRepository {
+        return CartRepositoryImpl(compatibilityEngine)
     }
 }

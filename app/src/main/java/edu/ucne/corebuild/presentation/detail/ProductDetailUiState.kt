@@ -5,5 +5,9 @@ import edu.ucne.corebuild.domain.model.Component
 data class ProductDetailUiState(
     val component: Component? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val snackbarMessage: String? = null,
+    val navigateToCart: Boolean = false,
+    val quantityLimit: Int = 1,
+    val currentInCart: Int = 0
 )

@@ -4,5 +4,6 @@ import edu.ucne.corebuild.domain.model.Component
 
 sealed interface ProductDetailEvent {
     data class LoadComponent(val id: Int) : ProductDetailEvent
-    data class AddToCart(val component: Component) : ProductDetailEvent
+    data class AddToCart(val component: Component, val quantity: Int) : ProductDetailEvent
+    data object DismissSnackbar : ProductDetailEvent
 }
