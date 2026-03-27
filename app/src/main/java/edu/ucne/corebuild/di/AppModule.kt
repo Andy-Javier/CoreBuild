@@ -2,6 +2,8 @@ package edu.ucne.corebuild.di
 
 import android.content.Context
 import androidx.room.Room
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,6 +17,8 @@ import edu.ucne.corebuild.data.repository.ComponentRepositoryImpl
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -56,4 +60,17 @@ object AppModule {
     fun provideCartRepository(compatibilityEngine: CompatibilityEngine): CartRepository {
         return CartRepositoryImpl(compatibilityEngine)
     }
+
+    @Provides
+    @Singleton
+    fun provideMoshi(): Moshi =
+        Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(moshi: Moshi): Retrofit =
+        Retrofit.Builder()
+            .baseUrl("https://corebuildapi-production.up.railway.app/api/")
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
 }
