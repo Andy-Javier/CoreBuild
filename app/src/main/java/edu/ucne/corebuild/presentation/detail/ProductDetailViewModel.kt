@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.repository.CartRepository
+import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,25 +15,29 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class ProductDetailViewModel @Inject constructor(
     private val getComponentUseCase: GetComponentUseCase,
     private val cartRepository: CartRepository,
+    private val orderRepository: OrderRepository,
     private val compatibilityEngine: CompatibilityEngine
 ) : ViewModel() {
 
     private val _componentState = MutableStateFlow<Component?>(null)
     private val _isLoading = MutableStateFlow(false)
     private val _snackbarMessage = MutableStateFlow<String?>(null)
+    private val _orderCompleted = MutableStateFlow(false)
 
     val uiState: StateFlow<ProductDetailUiState> = combine(
         _componentState,
         _isLoading,
         _snackbarMessage,
+        _orderCompleted,
         cartRepository.getCartItems()
-    ) { component, loading, message, cartItems ->
+    ) { component, loading, message, completed, cartItems ->
         val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 1
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
         
@@ -40,7 +46,8 @@ class ProductDetailViewModel @Inject constructor(
             isLoading = loading,
             snackbarMessage = message,
             quantityLimit = limit,
-            currentInCart = currentInCart
+            currentInCart = currentInCart,
+            orderCompleted = completed
         )
     }.stateIn(
         scope = viewModelScope,
@@ -71,6 +78,22 @@ class ProductDetailViewModel @Inject constructor(
                     }
                 }
             }
+            is ProductDetailEvent.OnBuyNow -> {
+                viewModelScope.launch {
+                    try {
+                        val order = Order(
+                            components = listOf(event.component),
+                            totalPrice = event.component.price,
+                            date = Date()
+                        )
+                        orderRepository.createOrder(order)
+                        _orderCompleted.value = true
+                        _snackbarMessage.value = "¡Compra realizada con éxito!"
+                    } catch (e: Exception) {
+                        _snackbarMessage.value = "Error al procesar la compra: ${e.message}"
+                    }
+                }
+            }
             is ProductDetailEvent.DismissSnackbar -> {
                 _snackbarMessage.value = null
             }
@@ -85,10 +108,5 @@ class ProductDetailViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
-    }
-    
-    fun showLimitReachedMessage() {
-        val limit = uiState.value.quantityLimit
-        _snackbarMessage.value = "Límite alcanzado: Máximo $limit unidades en total"
     }
 }

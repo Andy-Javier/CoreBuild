@@ -10,12 +10,18 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import edu.ucne.corebuild.data.local.dao.ComponentDao
+import edu.ucne.corebuild.data.local.dao.OrderDao
+import edu.ucne.corebuild.data.local.dao.UserDao
 import edu.ucne.corebuild.data.local.database.CoreBuildDatabase
 import edu.ucne.corebuild.data.local.datasource.ComponentLocalDataSource
 import edu.ucne.corebuild.data.repository.CartRepositoryImpl
 import edu.ucne.corebuild.data.repository.ComponentRepositoryImpl
+import edu.ucne.corebuild.data.repository.OrderRepositoryImpl
+import edu.ucne.corebuild.data.repository.UserRepositoryImpl
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.domain.repository.OrderRepository
+import edu.ucne.corebuild.domain.repository.UserRepository
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -41,12 +47,38 @@ object AppModule {
     }
 
     @Provides
+    fun provideOrderDao(db: CoreBuildDatabase): OrderDao {
+        return db.orderDao()
+    }
+
+    @Provides
+    fun provideUserDao(db: CoreBuildDatabase): UserDao {
+        return db.userDao()
+    }
+
+    @Provides
     @Singleton
     fun provideComponentRepository(
         dao: ComponentDao,
         localDataSource: ComponentLocalDataSource
     ): ComponentRepository {
         return ComponentRepositoryImpl(dao, localDataSource)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOrderRepository(
+        orderDao: OrderDao
+    ): OrderRepository {
+        return OrderRepositoryImpl(orderDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(
+        userDao: UserDao
+    ): UserRepository {
+        return UserRepositoryImpl(userDao)
     }
 
     @Provides

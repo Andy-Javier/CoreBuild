@@ -3,21 +3,18 @@ package edu.ucne.corebuild.presentation.cart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.repository.CartRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val cartRepository: CartRepository,
-    private val compatibilityEngine: CompatibilityEngine
+    private val compatibilityEngine: CompatibilityEngine,
+    private val buildScoreCalculator: BuildScoreCalculator
 ) : ViewModel() {
 
     private val _snackbarMessage = MutableStateFlow<String?>(null)
@@ -27,11 +24,15 @@ class CartViewModel @Inject constructor(
         cartRepository.getCartTotal(),
         _snackbarMessage
     ) { items, total, message ->
+        val score = buildScoreCalculator.calculateScore(items)
         CartUiState(
             cartItems = items,
             total = total,
             warnings = compatibilityEngine.checkCompatibility(items),
-            snackbarMessage = message
+            snackbarMessage = message,
+            buildScore = score.score,
+            buildLabel = score.label,
+            buildRecommendations = score.recommendations
         )
     }.stateIn(
         scope = viewModelScope,

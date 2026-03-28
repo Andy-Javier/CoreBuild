@@ -9,5 +9,6 @@ data class ProductDetailUiState(
     val snackbarMessage: String? = null,
     val navigateToCart: Boolean = false,
     val quantityLimit: Int = 1,
-    val currentInCart: Int = 0
+    val currentInCart: Int = 0,
+    val orderCompleted: Boolean = false
 )
