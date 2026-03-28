@@ -35,8 +35,8 @@ class RecommendationViewModel @Inject constructor(
             is RecommendationEvent.OnBudgetChange -> {
                 _uiState.update { it.copy(budget = event.budget) }
             }
-            is RecommendationEvent.OnBaseComponentSelect -> {
-                _uiState.update { it.copy(baseComponent = event.component) }
+            is RecommendationEvent.OnPriorityChange -> {
+                _uiState.update { it.copy(priority = event.priority) }
             }
             is RecommendationEvent.OnGenerateBuild -> generateBuild()
         }
@@ -53,13 +53,22 @@ class RecommendationViewModel @Inject constructor(
         
         val recommended = buildRecommender.recommendBuild(
             budget = budget,
-            baseComponent = _uiState.value.baseComponent,
+            priority = _uiState.value.priority,
             allComponents = _uiState.value.allComponents
         )
 
-        _uiState.update { it.copy(
-            isLoading = false,
-            recommendedComponents = recommended
-        ) }
+        if (recommended.isEmpty()) {
+            _uiState.update { it.copy(
+                isLoading = false,
+                recommendedComponents = emptyList(),
+                error = "El presupuesto es insuficiente para armar una PC completa con los componentes actuales."
+            ) }
+        } else {
+            _uiState.update { it.copy(
+                isLoading = false,
+                recommendedComponents = recommended,
+                error = null
+            ) }
+        }
     }
 }

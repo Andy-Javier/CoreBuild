@@ -9,70 +9,94 @@ class BuildRecommender @Inject constructor(
 ) {
     fun recommendBuild(
         budget: Double,
-        baseComponent: Component?,
+        priority: String?, // "CPU" or "GPU"
         allComponents: List<Component>
     ): List<Component> {
         val result = mutableListOf<Component>()
         var currentBudget = budget
-        
-        // Si hay un componente base, añadirlo primero
-        baseComponent?.let { 
-            result.add(it)
-            currentBudget -= it.price
-        }
 
         val cpus = allComponents.filterIsInstance<Component.CPU>().sortedByDescending { it.price }
         val gpus = allComponents.filterIsInstance<Component.GPU>().sortedByDescending { it.price }
-        val mobos = allComponents.filterIsInstance<Component.Motherboard>().sortedByDescending { it.price }
-        val rams = allComponents.filterIsInstance<Component.RAM>().sortedByDescending { it.price }
-        val psus = allComponents.filterIsInstance<Component.PSU>().sortedByDescending { it.price }
+        val mobos = allComponents.filterIsInstance<Component.Motherboard>().sortedBy { it.price } // Cheapest first for stability
+        val rams = allComponents.filterIsInstance<Component.RAM>().sortedBy { it.price }
+        val psus = allComponents.filterIsInstance<Component.PSU>().sortedBy { it.price } // Selection: cheapest that fits requirements
 
-        // Paso 1: Asegurar componentes esenciales
+        // 1. Allocate Budget based on Priority
+        val cpuBudget: Double
+        val gpuBudget: Double
         
-        // 1. CPU (si no es base)
-        if (result.none { it is Component.CPU }) {
-            cpus.find { it.price <= currentBudget * 0.3 }?.let { 
-                result.add(it)
-                currentBudget -= it.price
+        when (priority) {
+            "CPU" -> {
+                cpuBudget = budget * 0.45
+                gpuBudget = budget * 0.25
+            }
+            "GPU" -> {
+                cpuBudget = budget * 0.25
+                gpuBudget = budget * 0.45
+            }
+            else -> {
+                cpuBudget = budget * 0.35
+                gpuBudget = budget * 0.35
             }
         }
 
-        // 2. Motherboard compatible con el CPU
-        val cpu = result.filterIsInstance<Component.CPU>().firstOrNull()
-        if (cpu != null && result.none { it is Component.Motherboard }) {
-            mobos.find { it.socket == cpu.socket && it.price <= currentBudget * 0.2 }?.let {
-                result.add(it)
-                currentBudget -= it.price
+        // 2. Select CPU
+        val selectedCpu = cpus.find { it.price <= cpuBudget }
+        if (selectedCpu != null) {
+            result.add(selectedCpu)
+            currentBudget -= selectedCpu.price
+        }
+
+        // 3. Select GPU (Optional if budget too low, but recommended)
+        val selectedGpu = gpus.find { it.price <= gpuBudget }
+        if (selectedGpu != null) {
+            result.add(selectedGpu)
+            currentBudget -= selectedGpu.price
+        }
+
+        // 4. Select compatible Motherboard (Cheapest compatible)
+        if (selectedCpu != null) {
+            val compatibleMobo = allComponents.filterIsInstance<Component.Motherboard>()
+                .filter { it.socket == selectedCpu.socket }
+                .minByOrNull { it.price }
+            
+            if (compatibleMobo != null && currentBudget >= compatibleMobo.price) {
+                result.add(compatibleMobo)
+                currentBudget -= compatibleMobo.price
             }
         }
 
-        // 3. GPU (si no es base)
-        if (result.none { it is Component.GPU }) {
-            gpus.find { it.price <= currentBudget * 0.4 }?.let {
-                result.add(it)
-                currentBudget -= it.price
-            }
-        }
-
-        // 4. RAM compatible con Motherboard
+        // 5. Select compatible RAM (Cheapest compatible)
         val mobo = result.filterIsInstance<Component.Motherboard>().firstOrNull()
-        if (mobo != null && result.none { it is Component.RAM }) {
-            rams.find { it.type == mobo.ramType && it.price <= currentBudget * 0.15 }?.let {
-                result.add(it)
-                currentBudget -= it.price
+        if (mobo != null) {
+            val compatibleRam = allComponents.filterIsInstance<Component.RAM>()
+                .filter { it.type == mobo.ramType }
+                .minByOrNull { it.price }
+            
+            if (compatibleRam != null && currentBudget >= compatibleRam.price) {
+                result.add(compatibleRam)
+                currentBudget -= compatibleRam.price
             }
         }
 
-        // 5. PSU potente para la GPU
+        // 6. Select PSU (Cheapest that meets wattage)
         val gpu = result.filterIsInstance<Component.GPU>().firstOrNull()
-        if (gpu != null && result.none { it is Component.PSU }) {
-            val recWattage = gpu.recommendedWattage.filter { it.isDigit() }.toIntOrNull() ?: 500
-            psus.find { it.wattage >= recWattage && it.price <= currentBudget }?.let {
-                result.add(it)
-                currentBudget -= it.price
-            }
+        val requiredWattage = if (gpu != null) {
+            gpu.recommendedWattage.filter { it.isDigit() }.toIntOrNull() ?: 500
+        } else 400
+
+        val selectedPsu = psus.find { it.wattage >= requiredWattage && it.price <= currentBudget }
+        if (selectedPsu != null) {
+            result.add(selectedPsu)
+            currentBudget -= selectedPsu.price
         }
 
-        return result
+        // Validation: Must have at least CPU, Mobo, RAM, and PSU to be a "PC"
+        val hasEssentials = result.any { it is Component.CPU } && 
+                           result.any { it is Component.Motherboard } && 
+                           result.any { it is Component.RAM } && 
+                           result.any { it is Component.PSU }
+
+        return if (hasEssentials) result else emptyList()
     }
 }

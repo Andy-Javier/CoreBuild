@@ -5,33 +5,33 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface CoreBuildApi {
-    @GET("api/Cpu")
+    @GET("Cpu")
     suspend fun getCpus(): List<CpuDto>
 
-    @GET("api/Cpu/{id}")
+    @GET("Cpu/{id}")
     suspend fun getCpu(@Path("id") id: Int): CpuDto
 
-    @GET("api/Gpu")
+    @GET("Gpu")
     suspend fun getGpus(): List<GpuDto>
 
-    @GET("api/Gpu/{id}")
+    @GET("Gpu/{id}")
     suspend fun getGpu(@Path("id") id: Int): GpuDto
 
-    @GET("api/Motherboard")
+    @GET("Motherboard")
     suspend fun getMotherboards(): List<MotherboardDto>
 
-    @GET("api/Motherboard/{id}")
+    @GET("Motherboard/{id}")
     suspend fun getMotherboard(@Path("id") id: Int): MotherboardDto
 
-    @GET("api/Ram")
+    @GET("Ram")
     suspend fun getRams(): List<RamDto>
 
-    @GET("api/Ram/{id}")
+    @GET("Ram/{id}")
     suspend fun getRam(@Path("id") id: Int): RamDto
 
-    @GET("api/Psu")
+    @GET("Psu")
     suspend fun getPsus(): List<PsuDto>
 
-    @GET("api/Psu/{id}")
+    @GET("Psu/{id}")
     suspend fun getPsu(@Path("id") id: Int): PsuDto
 }
