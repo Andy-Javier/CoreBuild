@@ -1,18 +1,21 @@
 package edu.ucne.corebuild.presentation.orders
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Order
 import java.text.SimpleDateFormat
@@ -45,7 +48,7 @@ fun OrdersScreen(
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (uiState.orders.isEmpty()) {
+            } else if (uiState.orders.isEmpty() && !uiState.showConfirmation) {
                 Text(
                     text = "No tienes pedidos aún",
                     modifier = Modifier.align(Alignment.Center)
@@ -58,6 +61,53 @@ fun OrdersScreen(
                 ) {
                     items(uiState.orders) { order ->
                         OrderItem(order = order)
+                    }
+                }
+            }
+
+            // Pantalla de confirmación "Gracias por tu compra"
+            AnimatedVisibility(
+                visible = uiState.showConfirmation,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(100.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "¡Gracias por tu compra!",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Tu pedido se está procesando y pronto será entregado.",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = { viewModel.onEvent(OrdersEvent.DismissConfirmation) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ver mis pedidos")
+                        }
                     }
                 }
             }
