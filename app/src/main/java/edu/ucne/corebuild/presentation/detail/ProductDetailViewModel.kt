@@ -4,16 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
+import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.repository.CartRepository
+import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -23,26 +21,43 @@ class ProductDetailViewModel @Inject constructor(
     private val getComponentUseCase: GetComponentUseCase,
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
+    private val favoriteRepository: FavoriteRepository,
     private val compatibilityEngine: CompatibilityEngine
 ) : ViewModel() {
 
-    private val _componentState = MutableStateFlow<Component?>(null)
+    private val _componentId = MutableStateFlow<Int?>(null)
     private val _isLoading = MutableStateFlow(false)
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     private val _orderCompleted = MutableStateFlow(false)
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val _component = _componentId.filterNotNull().flatMapLatest { id ->
+        getComponentUseCase(id)
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val _isFavorite = _componentId.filterNotNull().flatMapLatest { id ->
+        favoriteRepository.isFavorite(id)
+    }
+
+    // Agrupamos estados para no exceder el límite de 5 de combine
+    private val _operationState = combine(_isLoading, _snackbarMessage, _orderCompleted) { loading, msg, completed ->
+        Triple(loading, msg, completed)
+    }
+
     val uiState: StateFlow<ProductDetailUiState> = combine(
-        _componentState,
-        _isLoading,
-        _snackbarMessage,
-        _orderCompleted,
+        _component,
+        _isFavorite,
+        _operationState,
         cartRepository.getCartItems()
-    ) { component, loading, message, completed, cartItems ->
-        val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 1
+    ) { component, isFav, opState, cartItems ->
+        val (loading, message, completed) = opState
+        val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 3
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
         
         ProductDetailUiState(
             component = component,
+            isFavorite = isFav,
             isLoading = loading,
             snackbarMessage = message,
             quantityLimit = limit,
@@ -57,7 +72,9 @@ class ProductDetailViewModel @Inject constructor(
 
     fun onEvent(event: ProductDetailEvent) {
         when (event) {
-            is ProductDetailEvent.LoadComponent -> loadComponent(event.id)
+            is ProductDetailEvent.LoadComponent -> {
+                _componentId.value = event.id
+            }
             is ProductDetailEvent.AddToCart -> {
                 viewModelScope.launch {
                     val state = uiState.value
@@ -82,8 +99,8 @@ class ProductDetailViewModel @Inject constructor(
                 viewModelScope.launch {
                     try {
                         val order = Order(
-                            components = listOf(event.component),
-                            totalPrice = event.component.price,
+                            components = List(event.quantity) { event.component },
+                            totalPrice = event.component.price * event.quantity,
                             date = Date()
                         )
                         orderRepository.createOrder(order)
@@ -94,18 +111,15 @@ class ProductDetailViewModel @Inject constructor(
                     }
                 }
             }
+            is ProductDetailEvent.OnToggleFavorite -> {
+                viewModelScope.launch {
+                    _componentId.value?.let { id ->
+                        favoriteRepository.toggleFavorite(id)
+                    }
+                }
+            }
             is ProductDetailEvent.DismissSnackbar -> {
                 _snackbarMessage.value = null
-            }
-        }
-    }
-
-    private fun loadComponent(id: Int) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            getComponentUseCase(id).collect { component ->
-                _componentState.value = component
-                _isLoading.value = false
             }
         }
     }
