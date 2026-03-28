@@ -7,5 +7,8 @@ data class CartUiState(
     val total: Double = 0.0,
     val warnings: List<String> = emptyList(),
     val isLoading: Boolean = false,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val buildScore: Int = 0,
+    val buildLabel: String = "",
+    val buildRecommendations: List<String> = emptyList()
 )
