@@ -16,23 +16,27 @@ class HomeViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     private val _isLoading = MutableStateFlow(false)
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private val _debouncedQuery = _searchQuery.debounce(300)
+
     val uiState: StateFlow<HomeUiState> = combine(
         getComponentsUseCase(),
         _searchQuery,
+        _debouncedQuery,
         _isLoading
-    ) { components, query, loading ->
-        val filtered = if (query.isBlank()) {
+    ) { components, immediateQuery, debouncedQuery, loading ->
+        val filtered = if (debouncedQuery.isBlank()) {
             components
         } else {
             components.filter {
-                it.name.contains(query, ignoreCase = true) ||
-                it.category.contains(query, ignoreCase = true)
+                it.name.contains(debouncedQuery, ignoreCase = true) ||
+                it.category.contains(debouncedQuery, ignoreCase = true)
             }
         }
         HomeUiState(
             components = components,
             filteredComponents = filtered,
-            searchQuery = query,
+            searchQuery = immediateQuery,
             isLoading = loading
         )
     }.stateIn(
