@@ -17,4 +17,16 @@ sealed class Screen {
 
     @Serializable
     data object Bottleneck : Screen()
+
+    @Serializable
+    data object Favorites : Screen()
+
+    @Serializable
+    data object Orders : Screen()
+
+    @Serializable
+    data class OrderDetail(val orderId: Int) : Screen()
+
+    @Serializable
+    data object Recommendation : Screen()
 }

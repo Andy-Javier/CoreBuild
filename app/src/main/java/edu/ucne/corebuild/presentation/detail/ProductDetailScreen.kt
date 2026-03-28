@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,11 +44,11 @@ fun ProductDetailScreen(
             viewModel.onEvent(ProductDetailEvent.AddToCart(component, quantity))
             onCartClick()
         },
+        onToggleFavorite = {
+            viewModel.onEvent(ProductDetailEvent.OnToggleFavorite)
+        },
         onDismissSnackbar = {
             viewModel.onEvent(ProductDetailEvent.DismissSnackbar)
-        },
-        onLimitReached = {
-            viewModel.showLimitReachedMessage()
         }
     )
 }
@@ -60,18 +61,16 @@ fun ProductDetailContent(
     onCartClick: () -> Unit,
     onAddToCart: (Component, Int) -> Unit,
     onBuyNow: (Component, Int) -> Unit,
-    onDismissSnackbar: () -> Unit,
-    onLimitReached: () -> Unit
+    onToggleFavorite: () -> Unit,
+    onDismissSnackbar: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     
-    // Cálculo de disponibilidad global
     val availableToSelect = (state.quantityLimit - state.currentInCart).coerceAtLeast(0)
     var quantity by remember { mutableIntStateOf(1) }
 
-    // Si lo disponible cambia y es menor que la cantidad seleccionada, ajustamos
     LaunchedEffect(availableToSelect) {
         if (availableToSelect > 0 && quantity > availableToSelect) {
             quantity = availableToSelect
@@ -101,6 +100,13 @@ fun ProductDetailContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onToggleFavorite) {
+                        Icon(
+                            imageVector = if (state.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     IconButton(onClick = onCartClick) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
                     }
@@ -138,7 +144,7 @@ fun ProductDetailContent(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "Has alcanzado el límite máximo de este componente en tu carrito (${state.quantityLimit}).",
+                                        "Has alcanzado el límite máximo (${state.quantityLimit}).",
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onErrorContainer
                                     )
@@ -169,8 +175,7 @@ fun ProductDetailContent(
                                 quantity = quantity,
                                 limit = availableToSelect,
                                 enabled = availableToSelect > 0,
-                                onQuantityChange = { quantity = it },
-                                onLimitReached = onLimitReached
+                                onQuantityChange = { quantity = it }
                             )
                         }
                         
@@ -268,7 +273,7 @@ fun ProductDetailContent(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = "Ya tienes ${state.currentInCart} unidades de este producto en el carrito.",
+                                    text = "Ya tienes ${state.currentInCart} unidades en el carrito.",
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -291,13 +296,6 @@ fun ProductDetailContent(
                         
                         Spacer(modifier = Modifier.height(32.dp))
                     }
-                } ?: run {
-                    if (!state.isLoading) {
-                        Text(
-                            text = "Componente no encontrado",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
                 }
             }
         }
@@ -309,8 +307,7 @@ fun QuantitySelector(
     quantity: Int,
     limit: Int,
     enabled: Boolean,
-    onQuantityChange: (Int) -> Unit,
-    onLimitReached: () -> Unit
+    onQuantityChange: (Int) -> Unit
 ) {
     Surface(
         color = if (enabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
@@ -325,11 +322,7 @@ fun QuantitySelector(
                 modifier = Modifier.size(32.dp),
                 enabled = enabled && quantity > 1
             ) {
-                Icon(
-                    Icons.Default.Remove, 
-                    contentDescription = "Disminuir",
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Default.Remove, contentDescription = "Disminuir", modifier = Modifier.size(18.dp))
             }
             
             Text(
@@ -341,21 +334,11 @@ fun QuantitySelector(
             )
             
             IconButton(
-                onClick = { 
-                    if (quantity < limit) {
-                        onQuantityChange(quantity + 1)
-                    } else {
-                        onLimitReached()
-                    }
-                },
+                onClick = { if (quantity < limit) onQuantityChange(quantity + 1) },
                 modifier = Modifier.size(32.dp),
-                enabled = enabled
+                enabled = enabled && quantity < limit
             ) {
-                Icon(
-                    Icons.Default.Add, 
-                    contentDescription = "Aumentar",
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -366,9 +349,7 @@ fun SpecificComponentDetails(component: Component) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -417,21 +398,11 @@ fun SpecificComponentDetails(component: Component) {
 @Composable
 fun DetailRow(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }

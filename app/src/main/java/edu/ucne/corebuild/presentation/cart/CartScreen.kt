@@ -1,5 +1,6 @@
 package edu.ucne.corebuild.presentation.cart
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.CartItem
@@ -22,7 +24,8 @@ import edu.ucne.corebuild.domain.model.CartItem
 @Composable
 fun CartScreen(
     viewModel: CartViewModel = hiltViewModel(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onMenuClick: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -40,8 +43,13 @@ fun CartScreen(
             TopAppBar(
                 title = { Text("Carrito de Compras") },
                 navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menú")
+                    }
+                },
+                actions = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar")
                     }
                 }
             )
@@ -52,55 +60,122 @@ fun CartScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (state.cartItems.isEmpty()) {
-                Text(
-                    text = "El carrito está vacío",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+            if (state.showOrderConfirmation) {
+                OrderConfirmationOverlay()
+            } else if (state.cartItems.isEmpty()) {
+                EmptyCartMessage(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Warnings Section
-                    if (state.warnings.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            state.warnings.forEach { warning ->
-                                Text(
-                                    text = warning,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        items(state.cartItems) { item ->
-                            CartItemRow(
-                                item = item,
-                                onUpdateQuantity = { id, qty -> 
-                                    viewModel.onEvent(CartEvent.UpdateQuantity(id, qty)) 
-                                },
-                                onRemove = { id -> 
-                                    viewModel.onEvent(CartEvent.RemoveFromCart(id)) 
-                                }
-                            )
-                        }
-                    }
+                    CartContent(
+                        state = state,
+                        onUpdateQuantity = { id, qty -> viewModel.onEvent(CartEvent.UpdateQuantity(id, qty)) },
+                        onRemove = { id -> viewModel.onEvent(CartEvent.RemoveFromCart(id)) },
+                        modifier = Modifier.weight(1f)
+                    )
                     
                     CartSummary(
                         total = state.total,
-                        onClearCart = { viewModel.onEvent(CartEvent.ClearCart) }
+                        onClearCart = { viewModel.onEvent(CartEvent.ClearCart) },
+                        onCheckout = { viewModel.onEvent(CartEvent.OnCheckout) }
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderConfirmationOverlay() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            modifier = Modifier.size(100.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "¡Gracias por tu compra!",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Estamos preparando tu hardware. Recibirás una notificación cuando sea entregado.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        CircularProgressIndicator(strokeWidth = 2.dp)
+    }
+}
+
+@Composable
+fun EmptyCartMessage(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Default.RemoveShoppingCart,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "El carrito está vacío",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.outline
+        )
+    }
+}
+
+@Composable
+fun CartContent(
+    state: CartUiState,
+    onUpdateQuantity: (Int, Int) -> Unit,
+    onRemove: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(modifier = modifier) {
+        if (state.warnings.isNotEmpty()) {
+            item {
+                WarningSection(state.warnings)
+            }
+        }
+        items(state.cartItems) { item ->
+            CartItemRow(
+                item = item,
+                onUpdateQuantity = onUpdateQuantity,
+                onRemove = onRemove
+            )
+        }
+    }
+}
+
+@Composable
+fun WarningSection(warnings: List<String>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            warnings.forEach { warning ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = warning, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
         }
@@ -180,7 +255,8 @@ fun CartItemRow(
 @Composable
 fun CartSummary(
     total: Double,
-    onClearCart: () -> Unit
+    onClearCart: () -> Unit,
+    onCheckout: () -> Unit
 ) {
     Surface(
         tonalElevation = 8.dp,
@@ -220,12 +296,12 @@ fun CartSummary(
                     Text("Vaciar")
                 }
                 Button(
-                    onClick = { /* Implementar Checkout */ },
+                    onClick = onCheckout,
                     modifier = Modifier.weight(1.3f).height(48.dp),
                     shape = MaterialTheme.shapes.large,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
-                    Text("Pagar Ahora")
+                    Text("Finalizar Compra")
                 }
             }
         }

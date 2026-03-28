@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,8 +29,12 @@ import edu.ucne.corebuild.presentation.bottleneck.BottleneckScreen
 import edu.ucne.corebuild.presentation.cart.CartScreen
 import edu.ucne.corebuild.presentation.comparator.ComparatorScreen
 import edu.ucne.corebuild.presentation.detail.ProductDetailScreen
+import edu.ucne.corebuild.presentation.favorites.FavoritesScreen
 import edu.ucne.corebuild.presentation.home.HomeScreen
 import edu.ucne.corebuild.presentation.navigation.Screen
+import edu.ucne.corebuild.presentation.orders.OrderDetailScreen
+import edu.ucne.corebuild.presentation.orders.OrdersScreen
+import edu.ucne.corebuild.presentation.recommendation.RecommendationScreen
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import edu.ucne.corebuild.ui.theme.ThemeMode
 import edu.ucne.corebuild.ui.theme.ThemeSettings
@@ -59,6 +64,8 @@ fun CoreBuildAppContent() {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -85,7 +92,7 @@ fun CoreBuildAppContent() {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        "Build your dream PC",
+                        "Crea tu PC ideal",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -95,37 +102,70 @@ fun CoreBuildAppContent() {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                    label = { Text("Inicio") },
-                    selected = false,
+                DrawerItem(
+                    icon = Icons.Default.Home,
+                    label = "Inicio",
+                    selected = currentRoute?.contains("Home") == true,
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Home) {
                             popUpTo(Screen.Home) { inclusive = true }
                         }
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    }
                 )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Compare, contentDescription = null) },
-                    label = { Text("Comparador") },
-                    selected = false,
+                DrawerItem(
+                    icon = Icons.Default.Favorite,
+                    label = "Mis Favoritos",
+                    selected = currentRoute?.contains("Favorites") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Favorites)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.ReceiptLong,
+                    label = "Mis Pedidos",
+                    selected = currentRoute?.contains("Orders") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Orders)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.ShoppingCart,
+                    label = "Mi Carrito",
+                    selected = currentRoute?.contains("Cart") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Cart)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.Compare,
+                    label = "Comparador",
+                    selected = currentRoute?.contains("Comparator") == true,
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Comparator)
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    }
                 )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Speed, contentDescription = null) },
-                    label = { Text("Calculadora Cuello Botella") },
-                    selected = false,
+                DrawerItem(
+                    icon = Icons.Default.Speed,
+                    label = "Cuello Botella",
+                    selected = currentRoute?.contains("Bottleneck") == true,
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Bottleneck)
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.AutoAwesome,
+                    label = "Recomendador IA",
+                    selected = currentRoute?.contains("Recommendation") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Recommendation)
+                    }
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
@@ -139,29 +179,20 @@ fun CoreBuildAppContent() {
                     color = MaterialTheme.colorScheme.primary
                 )
                 
-                SingleChoiceSegmentedButtonRow(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    val modes = listOf(
-                        Triple(ThemeMode.LIGHT, Icons.Outlined.LightMode, "Claro"),
-                        Triple(ThemeMode.SYSTEM, Icons.Outlined.SettingsSuggest, "Auto"),
-                        Triple(ThemeMode.DARK, Icons.Outlined.DarkMode, "Oscuro")
-                    )
-                    
-                    modes.forEachIndexed { index, (mode, icon, label) ->
-                        SegmentedButton(
-                            selected = ThemeSettings.themeState == mode,
-                            onClick = { ThemeSettings.themeState = mode },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                            icon = {
-                                SegmentedButtonDefaults.Icon(active = ThemeSettings.themeState == mode) {
-                                    Icon(icon, contentDescription = label)
-                                }
-                            },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                        )
+                    ThemeOption(Icons.Outlined.LightMode, ThemeSettings.themeState == ThemeMode.LIGHT) {
+                        ThemeSettings.themeState = ThemeMode.LIGHT
+                    }
+                    ThemeOption(Icons.Outlined.SettingsSuggest, ThemeSettings.themeState == ThemeMode.SYSTEM) {
+                        ThemeSettings.themeState = ThemeMode.SYSTEM
+                    }
+                    ThemeOption(Icons.Outlined.DarkMode, ThemeSettings.themeState == ThemeMode.DARK) {
+                        ThemeSettings.themeState = ThemeMode.DARK
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -189,6 +220,33 @@ fun CoreBuildAppContent() {
                     }
                 )
             }
+            composable<Screen.Favorites> {
+                FavoritesScreen(
+                    onComponentClick = { id ->
+                        navController.navigate(Screen.Detail(id))
+                    },
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            }
+            composable<Screen.Orders> {
+                OrdersScreen(
+                    onOrderClick = { id ->
+                        navController.navigate(Screen.OrderDetail(id))
+                    },
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            }
+            composable<Screen.OrderDetail> { backStackEntry ->
+                val detail: Screen.OrderDetail = backStackEntry.toRoute()
+                OrderDetailScreen(
+                    orderId = detail.orderId,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
             composable<Screen.Detail> { backStackEntry ->
                 val detail: Screen.Detail = backStackEntry.toRoute()
                 ProductDetailScreen(
@@ -199,7 +257,8 @@ fun CoreBuildAppContent() {
             }
             composable<Screen.Cart> {
                 CartScreen(
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
             composable<Screen.Comparator> {
@@ -216,6 +275,49 @@ fun CoreBuildAppContent() {
                     }
                 )
             }
+            composable<Screen.Recommendation> {
+                RecommendationScreen(
+                 onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    },
+                    onComponentClick = { id ->
+                        navController.navigate(Screen.Detail(id))
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+fun DrawerItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    NavigationDrawerItem(
+        icon = { Icon(icon, contentDescription = null) },
+        label = { Text(label) },
+        selected = selected,
+        onClick = onClick,
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+}
+
+@Composable
+fun ThemeOption(
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Icon(icon, contentDescription = null) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    )
 }

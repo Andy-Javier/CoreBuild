@@ -9,20 +9,16 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import edu.ucne.corebuild.data.local.dao.ComponentDao
-import edu.ucne.corebuild.data.local.dao.OrderDao
-import edu.ucne.corebuild.data.local.dao.UserDao
+import edu.ucne.corebuild.data.local.dao.*
 import edu.ucne.corebuild.data.local.database.CoreBuildDatabase
-import edu.ucne.corebuild.data.local.datasource.ComponentLocalDataSource
-import edu.ucne.corebuild.data.repository.CartRepositoryImpl
-import edu.ucne.corebuild.data.repository.ComponentRepositoryImpl
-import edu.ucne.corebuild.data.repository.OrderRepositoryImpl
-import edu.ucne.corebuild.data.repository.UserRepositoryImpl
-import edu.ucne.corebuild.domain.repository.CartRepository
-import edu.ucne.corebuild.domain.repository.ComponentRepository
-import edu.ucne.corebuild.domain.repository.OrderRepository
-import edu.ucne.corebuild.domain.repository.UserRepository
+import edu.ucne.corebuild.data.remote.api.CoreBuildApi
+import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
+import edu.ucne.corebuild.data.repository.*
+import edu.ucne.corebuild.domain.repository.*
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
+import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
+import edu.ucne.corebuild.domain.recommendation.BuildRecommender
+import edu.ucne.corebuild.presentation.notifications.NotificationHelper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
@@ -38,59 +34,70 @@ object AppModule {
             context,
             CoreBuildDatabase::class.java,
             "corebuild.db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides
-    fun provideComponentDao(db: CoreBuildDatabase): ComponentDao {
-        return db.componentDao()
-    }
+    fun provideComponentDao(db: CoreBuildDatabase): ComponentDao = db.componentDao()
 
     @Provides
-    fun provideOrderDao(db: CoreBuildDatabase): OrderDao {
-        return db.orderDao()
-    }
+    fun provideOrderDao(db: CoreBuildDatabase): OrderDao = db.orderDao()
 
     @Provides
-    fun provideUserDao(db: CoreBuildDatabase): UserDao {
-        return db.userDao()
-    }
+    fun provideUserDao(db: CoreBuildDatabase): UserDao = db.userDao()
+
+    @Provides
+    fun provideFavoriteDao(db: CoreBuildDatabase): FavoriteDao = db.favoriteDao()
+
+    @Provides
+    fun provideCartDao(db: CoreBuildDatabase): CartDao = db.cartDao()
 
     @Provides
     @Singleton
     fun provideComponentRepository(
         dao: ComponentDao,
-        localDataSource: ComponentLocalDataSource
-    ): ComponentRepository {
-        return ComponentRepositoryImpl(dao, localDataSource)
-    }
+        remoteDataSource: RemoteDataSource
+    ): ComponentRepository = ComponentRepositoryImpl(dao, remoteDataSource)
 
     @Provides
     @Singleton
-    fun provideOrderRepository(
-        orderDao: OrderDao
-    ): OrderRepository {
-        return OrderRepositoryImpl(orderDao)
-    }
+    fun provideOrderRepository(orderDao: OrderDao): OrderRepository = OrderRepositoryImpl(orderDao)
 
     @Provides
     @Singleton
-    fun provideUserRepository(
-        userDao: UserDao
-    ): UserRepository {
-        return UserRepositoryImpl(userDao)
-    }
+    fun provideUserRepository(userDao: UserDao): UserRepository = UserRepositoryImpl(userDao)
 
     @Provides
     @Singleton
-    fun provideCompatibilityEngine(): CompatibilityEngine {
-        return CompatibilityEngine()
-    }
+    fun provideFavoriteRepository(favoriteDao: FavoriteDao): FavoriteRepository = FavoriteRepositoryImpl(favoriteDao)
 
     @Provides
     @Singleton
-    fun provideCartRepository(compatibilityEngine: CompatibilityEngine): CartRepository {
-        return CartRepositoryImpl(compatibilityEngine)
+    fun provideCompatibilityEngine(): CompatibilityEngine = CompatibilityEngine()
+
+    @Provides
+    @Singleton
+    fun provideBuildScoreCalculator(compatibilityEngine: CompatibilityEngine): BuildScoreCalculator = 
+        BuildScoreCalculator(compatibilityEngine)
+
+    @Provides
+    @Singleton
+    fun provideBuildRecommender(compatibilityEngine: CompatibilityEngine): BuildRecommender = 
+        BuildRecommender(compatibilityEngine)
+
+    @Provides
+    @Singleton
+    fun provideCartRepository(
+        cartDao: CartDao,
+        compatibilityEngine: CompatibilityEngine
+    ): CartRepository = CartRepositoryImpl(cartDao, compatibilityEngine)
+
+    @Provides
+    @Singleton
+    fun provideNotificationHelper(@ApplicationContext context: Context): NotificationHelper {
+        return NotificationHelper(context)
     }
 
     @Provides
@@ -105,4 +112,16 @@ object AppModule {
             .baseUrl("https://corebuildapi-production.up.railway.app/api/")
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
+
+    @Provides
+    @Singleton
+    fun provideCoreBuildApi(retrofit: Retrofit): CoreBuildApi {
+        return retrofit.create(CoreBuildApi::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideRemoteDataSource(api: CoreBuildApi): RemoteDataSource {
+        return RemoteDataSource(api)
+    }
 }

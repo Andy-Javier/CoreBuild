@@ -6,15 +6,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Component
@@ -22,7 +21,8 @@ import edu.ucne.corebuild.domain.model.Component
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecommendationScreen(
-    onBackClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onComponentClick: (Int) -> Unit,
     viewModel: RecommendationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -32,8 +32,8 @@ fun RecommendationScreen(
             TopAppBar(
                 title = { Text("Recomendador IA") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
                 }
             )
@@ -45,40 +45,46 @@ fun RecommendationScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Inputs: Budget and Base Component
+            // Inputs: Budget
             OutlinedTextField(
                 value = uiState.budget,
                 onValueChange = { viewModel.onEvent(RecommendationEvent.OnBudgetChange(it)) },
-                label = { Text("Presupuesto (USD)") },
+                label = { Text("Presupuesto Máximo (USD)") },
+                placeholder = { Text("Ej: 1000") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                prefix = { Text("$ ") }
+                prefix = { Text("$ ") },
+                shape = MaterialTheme.shapes.medium
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Selector simple de componente base (CPU o GPU)
-            Text("Componente Base (Opcional)", style = MaterialTheme.typography.labelLarge)
+            // Prioritize Section
+            Text(
+                "Priorizar Rendimiento de:", 
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = uiState.baseComponent is Component.CPU,
+                PriorityChip(
+                    label = "Procesador (CPU)",
+                    selected = uiState.priority == "CPU",
                     onClick = { 
-                        val cpu = uiState.allComponents.filterIsInstance<Component.CPU>().firstOrNull()
-                        viewModel.onEvent(RecommendationEvent.OnBaseComponentSelect(if (uiState.baseComponent is Component.CPU) null else cpu))
+                        viewModel.onEvent(RecommendationEvent.OnPriorityChange(if (uiState.priority == "CPU") null else "CPU"))
                     },
-                    label = { Text("CPU") }
+                    modifier = Modifier.weight(1f)
                 )
-                FilterChip(
-                    selected = uiState.baseComponent is Component.GPU,
+                PriorityChip(
+                    label = "Gráfica (GPU)",
+                    selected = uiState.priority == "GPU",
                     onClick = { 
-                        val gpu = uiState.allComponents.filterIsInstance<Component.GPU>().firstOrNull()
-                        viewModel.onEvent(RecommendationEvent.OnBaseComponentSelect(if (uiState.baseComponent is Component.GPU) null else gpu))
+                        viewModel.onEvent(RecommendationEvent.OnPriorityChange(if (uiState.priority == "GPU") null else "GPU"))
                     },
-                    label = { Text("GPU") }
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -86,51 +92,44 @@ fun RecommendationScreen(
 
             Button(
                 onClick = { viewModel.onEvent(RecommendationEvent.OnGenerateBuild) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.budget.isNotEmpty() && !uiState.isLoading
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = uiState.budget.isNotEmpty() && !uiState.isLoading,
+                shape = MaterialTheme.shapes.large
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Generar Build Recomendada")
+                Text("Generar Configuración")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.error != null) {
+                ErrorCard(uiState.error!!)
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     if (uiState.recommendedComponents.isNotEmpty()) {
                         item {
                             Text(
-                                "Configuración Sugerida",
+                                "Build Sugerida",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         items(uiState.recommendedComponents) { component ->
-                            RecommendedItem(component)
+                            RecommendedItem(component, onComponentClick)
                         }
                         item {
-                            Divider(modifier = Modifier.padding(vertical = 12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Total Estimado:", fontWeight = FontWeight.Bold)
-                                Text(
-                                    "$${String.format("%.2f", uiState.totalPrice)}",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    } else if (uiState.error != null) {
-                        item {
-                            Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                            SummaryRow("Total Estimado:", "$${String.format("%.2f", uiState.totalPrice)}", true)
+                            SummaryRow("Presupuesto Restante:", "$${String.format("%.2f", (uiState.budget.toDoubleOrNull() ?: 0.0) - uiState.totalPrice)}", false)
                         }
                     }
                 }
@@ -140,22 +139,81 @@ fun RecommendationScreen(
 }
 
 @Composable
-fun RecommendedItem(component: Component) {
+fun PriorityChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium
+    )
+}
+
+@Composable
+fun ErrorCard(message: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Computer, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(component.category, style = MaterialTheme.typography.labelSmall)
-                Text(component.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(text = message, color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+fun SummaryRow(label: String, value: String, isPrimary: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            value,
+            style = if (isPrimary) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (isPrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun RecommendedItem(component: Component, onClick: (Int) -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(component.id) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val icon = when(component) {
+                is Component.CPU -> Icons.Default.Memory
+                is Component.GPU -> Icons.Default.DeveloperBoard
+                is Component.Motherboard -> Icons.Default.SettingsInputComponent
+                is Component.RAM -> Icons.Default.AlignVerticalBottom
+                is Component.PSU -> Icons.Default.Power
             }
-            Text("$${component.price}", style = MaterialTheme.typography.bodyMedium)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(component.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                Text(component.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            }
+            Text("$${String.format("%.0f", component.price)}", fontWeight = FontWeight.Bold)
         }
     }
 }
