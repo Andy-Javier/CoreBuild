@@ -7,12 +7,9 @@ data class CartUiState(
     val total: Double = 0.0,
     val warnings: List<String> = emptyList(),
     val isLoading: Boolean = false,
-    val snackbarMessage: String? = null,
     val showOrderConfirmation: Boolean = false,
     val buildScore: Int = 0,
     val buildLabel: String = "",
     val buildRecommendations: List<String> = emptyList(),
-    val isLogged: Boolean = false,
-    val navigateToLogin: Boolean = false,
-    val navigateToThanks: Boolean = false
+    val isLogged: Boolean = false
 )
