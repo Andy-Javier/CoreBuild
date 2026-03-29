@@ -10,7 +10,10 @@ import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.random.Random
+
+sealed class HomeNavigationEvent {
+    data object NavigateToCart : HomeNavigationEvent()
+}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -24,38 +27,46 @@ class HomeViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     private val _showBuildDialog = MutableStateFlow(false)
     private val _featuredBuild = MutableStateFlow<PredefinedBuild?>(null)
-    private val _navigateToCart = MutableStateFlow(false)
+
+    private val _navigationEvent = MutableSharedFlow<HomeNavigationEvent>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val _debouncedQuery = _searchQuery.debounce(300)
 
-    @Suppress("UNCHECKED_CAST")
-    val uiState: StateFlow<HomeUiState> = combine(
-        getComponentsUseCase(),
-        statsRepository.getRecentlyViewed(),
-        statsRepository.getTopRated(),
-        _searchQuery,
-        _debouncedQuery,
-        _selectedCategory,
-        _isLoading,
-        _featuredBuild,
-        _showBuildDialog,
-        _navigateToCart
-    ) { flows ->
-        val components = flows[0] as List<Component>
-        val recentlyViewed = flows[1] as List<Component>
-        val topRated = flows[2] as List<Component>
-        val immediateQuery = flows[3] as String
-        val debouncedQuery = flows[4] as String
-        val selectedCat = flows[5] as String?
-        val loading = flows[6] as Boolean
-        val featured = flows[7] as PredefinedBuild?
-        val showDialog = flows[8] as Boolean
-        val navCart = flows[9] as Boolean
-
-        if (featured == null && components.isNotEmpty()) {
-            generateRandomBuild(components)
+    init {
+        viewModelScope.launch {
+            getComponentsUseCase()
+                .filter { it.isNotEmpty() }
+                .firstOrNull()
+                .let { components ->
+                    if (components != null) {
+                        generateRandomBuild(components)
+                    }
+                }
         }
+    }
+
+    val uiState: StateFlow<HomeUiState> = combine(
+        combine(
+            getComponentsUseCase(),
+            statsRepository.getRecentlyViewed(),
+            statsRepository.getTopRated()
+        ) { c, rv, tr -> Triple(c, rv, tr) },
+        combine(
+            _searchQuery,
+            _debouncedQuery,
+            _selectedCategory
+        ) { q, dq, cat -> Triple(q, dq, cat) },
+        combine(
+            _isLoading,
+            _featuredBuild,
+            _showBuildDialog
+        ) { l, f, s -> Triple(l, f, s) }
+    ) { data, inputs, ui ->
+        val (components, recentlyViewed, topRated) = data
+        val (immediateQuery, debouncedQuery, selectedCat) = inputs
+        val (loading, featured, showDialog) = ui
 
         val filtered = components.filter { component ->
             val matchesQuery = if (debouncedQuery.isBlank()) true 
@@ -91,8 +102,7 @@ class HomeViewModel @Inject constructor(
             selectedCategory = selectedCat,
             isLoading = loading,
             featuredBuild = featured,
-            showBuildDialog = showDialog,
-            navigateToCart = navCart
+            showBuildDialog = showDialog
         )
     }.stateIn(
         scope = viewModelScope,
@@ -109,7 +119,7 @@ class HomeViewModel @Inject constructor(
 
         if (cpus.isEmpty() || gpus.isEmpty() || mobos.isEmpty() || rams.isEmpty() || psus.isEmpty()) return
 
-        val builds = listOf(
+        val builds = listOfNotNull(
             createBuild("Master Race Ultra", "Lo mejor de lo mejor para 4K", cpus, gpus, mobos, rams, psus, budget = 4000.0),
             createBuild("Gaming Pro Balanced", "Equilibrio perfecto precio/rendimiento", cpus, gpus, mobos, rams, psus, budget = 2000.0),
             createBuild("Budget Warrior", "Excelente para 1080p competitivo", cpus, gpus, mobos, rams, psus, budget = 1000.0),
@@ -118,7 +128,9 @@ class HomeViewModel @Inject constructor(
             createBuild("Workstation Ready", "Ideal para renderizado y diseño", cpus, gpus, mobos, rams, psus, budget = 3500.0)
         )
 
-        _featuredBuild.value = builds.random()
+        if (builds.isNotEmpty()) {
+            _featuredBuild.value = builds.random()
+        }
     }
 
     private fun createBuild(
@@ -130,21 +142,28 @@ class HomeViewModel @Inject constructor(
         rams: List<Component.RAM>,
         psus: List<Component.PSU>,
         budget: Double
-    ): PredefinedBuild {
-        // Selection with compatibility logic
-        val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.first()
-        val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.first()
+    ): PredefinedBuild? {
+        val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.firstOrNull() ?: return null
+        val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.firstOrNull() ?: return null
         
-        // Exact socket match
-        val mobo = mobos.filter { it.socket.trim().equals(cpu.socket.trim(), ignoreCase = true) }
-            .minByOrNull { Math.abs(it.price - (budget * 0.15)) } ?: mobos.first()
+        // Limpiamos el socket para una comparación más robusta (quitamos espacios y pasamos a minúsculas)
+        val cleanCpuSocket = cpu.socket.replace(" ", "").lowercase()
+        
+        val mobo = mobos.filter { 
+            it.socket.replace(" ", "").lowercase() == cleanCpuSocket 
+        }.minByOrNull { Math.abs(it.price - (budget * 0.15)) } 
+        
+        // Si no hay motherboard compatible con el socket, cancelamos esta build para no mostrar datos erróneos
+        if (mobo == null) return null
             
-        val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.first()
+        val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
         
-        // PSU Wattage logic: GPU rec + buffer
         val gpuRecWatts = gpu.recommendedWattage.filter { it.isDigit() }.toIntOrNull() ?: 600
+        // Añadimos un pequeño buffer de seguridad a la fuente
         val psu = psus.filter { it.wattage >= gpuRecWatts }
-            .minByOrNull { it.wattage } ?: psus.maxByOrNull { it.wattage } ?: psus.first()
+            .minByOrNull { it.wattage } 
+            
+        if (psu == null) return null
 
         val buildList = listOf(cpu, gpu, mobo, ram, psu)
         return PredefinedBuild(
@@ -166,9 +185,9 @@ class HomeViewModel @Inject constructor(
                         cartRepository.addComponent(component)
                     }
                     _showBuildDialog.value = false
-                    _navigateToCart.value = true
+                    _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
-                HomeEvent.ResetNavigation -> _navigateToCart.value = false
+                HomeEvent.ResetNavigation -> { /* Managed by SharedFlow */ }
                 HomeEvent.LoadComponents -> { }
             }
         }
