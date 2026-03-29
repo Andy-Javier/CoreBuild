@@ -40,7 +40,6 @@ class ProductDetailViewModel @Inject constructor(
         favoriteRepository.isFavorite(id)
     }
 
-    // Agrupamos estados para no exceder el límite de 5 de combine
     private val _operationState = combine(_isLoading, _snackbarMessage, _orderCompleted) { loading, msg, completed ->
         Triple(loading, msg, completed)
     }
@@ -75,6 +74,13 @@ class ProductDetailViewModel @Inject constructor(
             is ProductDetailEvent.LoadComponent -> {
                 _componentId.value = event.id
             }
+            is ProductDetailEvent.OnToggleFavorite -> {
+                viewModelScope.launch {
+                    _componentId.value?.let { id ->
+                        favoriteRepository.toggleFavorite(id)
+                    }
+                }
+            }
             is ProductDetailEvent.AddToCart -> {
                 viewModelScope.launch {
                     val state = uiState.value
@@ -108,13 +114,6 @@ class ProductDetailViewModel @Inject constructor(
                         _snackbarMessage.value = "¡Compra realizada con éxito!"
                     } catch (e: Exception) {
                         _snackbarMessage.value = "Error al procesar la compra: ${e.message}"
-                    }
-                }
-            }
-            is ProductDetailEvent.OnToggleFavorite -> {
-                viewModelScope.launch {
-                    _componentId.value?.let { id ->
-                        favoriteRepository.toggleFavorite(id)
                     }
                 }
             }
