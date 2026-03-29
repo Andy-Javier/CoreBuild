@@ -6,4 +6,5 @@ sealed interface CartEvent {
     data object ClearCart : CartEvent
     data object OnCheckout : CartEvent
     data object DismissSnackbar : CartEvent
+    data object ResetNavigation : CartEvent
 }
