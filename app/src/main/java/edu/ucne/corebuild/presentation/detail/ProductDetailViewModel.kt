@@ -10,6 +10,7 @@ import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
+import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,6 +23,7 @@ class ProductDetailViewModel @Inject constructor(
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val favoriteRepository: FavoriteRepository,
+    private val statsRepository: StatsRepository,
     private val compatibilityEngine: CompatibilityEngine
 ) : ViewModel() {
 
@@ -32,7 +34,9 @@ class ProductDetailViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val _component = _componentId.filterNotNull().flatMapLatest { id ->
-        getComponentUseCase(id)
+        getComponentUseCase(id).onEach { component ->
+            component?.let { statsRepository.recordView(it.id) }
+        }
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -91,12 +95,14 @@ class ProductDetailViewModel @Inject constructor(
                          val availableToAdd = limit - state.currentInCart
                          if (availableToAdd > 0) {
                              cartRepository.addComponent(event.component, availableToAdd)
+                             statsRepository.recordAddedToCart(event.component.id)
                              _snackbarMessage.value = "Límite alcanzado. Solo se agregaron $availableToAdd unidades."
                          } else {
                              _snackbarMessage.value = "No se puede agregar más. Límite de $limit unidades ya alcanzado."
                          }
                     } else {
                         cartRepository.addComponent(event.component, event.quantity)
+                        statsRepository.recordAddedToCart(event.component.id)
                         _snackbarMessage.value = "Agregado al carrito"
                     }
                 }
@@ -110,6 +116,7 @@ class ProductDetailViewModel @Inject constructor(
                             date = Date()
                         )
                         orderRepository.createOrder(order)
+                        statsRepository.recordPurchase(event.component.id)
                         _orderCompleted.value = true
                         _snackbarMessage.value = "¡Compra realizada con éxito!"
                     } catch (e: Exception) {
