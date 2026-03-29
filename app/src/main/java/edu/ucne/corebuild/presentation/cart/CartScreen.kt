@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,7 @@ fun CartScreen(
                     )
                     
                     CartSummary(
-                        total = state.total,
+                        state = state,
                         onClearCart = { viewModel.onEvent(CartEvent.ClearCart) },
                         onCheckout = { viewModel.onEvent(CartEvent.OnCheckout) }
                     )
@@ -152,6 +153,9 @@ fun CartContent(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
+        item {
+            BuildScoreSection(state)
+        }
         if (state.warnings.isNotEmpty()) {
             item {
                 WarningSection(state.warnings)
@@ -168,11 +172,81 @@ fun CartContent(
 }
 
 @Composable
-fun WarningSection(warnings: List<String>) {
+fun BuildScoreSection(state: CartUiState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Build Score",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                val scoreColor = when(state.buildLabel) {
+                    "Excelente" -> Color(0xFF4CAF50)
+                    "Balanceado" -> Color(0xFF2196F3)
+                    else -> MaterialTheme.colorScheme.error
+                }
+                
+                Surface(
+                    color = scoreColor.copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.small,
+                    border = CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(scoreColor))
+                ) {
+                    Text(
+                        text = state.buildLabel,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = scoreColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            LinearProgressIndicator(
+                progress = { state.buildScore / 100f },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                color = when(state.buildLabel) {
+                    "Excelente" -> Color(0xFF4CAF50)
+                    "Balanceado" -> Color(0xFF2196F3)
+                    else -> MaterialTheme.colorScheme.error
+                },
+                trackColor = MaterialTheme.colorScheme.outlineVariant
+            )
+            
+            if (state.buildRecommendations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                state.buildRecommendations.forEach { rec ->
+                    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                        Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = rec, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WarningSection(warnings: List<String>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -274,7 +348,7 @@ fun CartItemRow(
 
 @Composable
 fun CartSummary(
-    total: Double,
+    state: CartUiState,
     onClearCart: () -> Unit,
     onCheckout: () -> Unit
 ) {
@@ -295,7 +369,7 @@ fun CartSummary(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "$${String.format("%.2f", total)}",
+                    text = "$${String.format("%.2f", state.total)}",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
