@@ -11,11 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -197,21 +200,23 @@ fun RecommendedItem(component: Component, onClick: (Int) -> Unit) {
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val icon = when(component) {
-                is Component.CPU -> Icons.Default.Memory
-                is Component.GPU -> Icons.Default.DeveloperBoard
-                is Component.Motherboard -> Icons.Default.SettingsInputComponent
-                is Component.RAM -> Icons.Default.AlignVerticalBottom
-                is Component.PSU -> Icons.Default.Power
-            }
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-            Spacer(modifier = Modifier.width(16.dp))
+            AsyncImage(
+                model = component.imageUrl ?: "https://via.placeholder.com/150",
+                contentDescription = component.name,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(MaterialTheme.shapes.small),
+                contentScale = ContentScale.Crop
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(component.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                Text(component.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(component.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             }
             Text("$${String.format("%.0f", component.price)}", fontWeight = FontWeight.Bold)
         }
