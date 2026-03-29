@@ -12,9 +12,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import java.text.SimpleDateFormat
 import java.util.*
@@ -169,10 +172,21 @@ fun OrderItemRow(component: Component, quantity: Int) {
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            AsyncImage(
+                model = component.imageUrl ?: "https://via.placeholder.com/150",
+                contentDescription = component.name,
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(MaterialTheme.shapes.small),
+                contentScale = ContentScale.Crop
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = component.name,
