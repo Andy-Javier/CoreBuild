@@ -4,33 +4,30 @@ import edu.ucne.corebuild.domain.model.Component
 
 data class MotherboardDto(
     val id: Int,
-    val nombre: String,
-    val marca: String,
-    val socket: String,
-    val chipset: String,
-    val formato: String,
-    val compatibilidadCpu: String,
-    val tipoRam: String,
-    val velocidadRamMax: String,
-    val slotsRam: String,
-    val almacenamiento: String,
-    val puertos: String,
-    val conectividad: String?,
-    val precioUsd: Double,
-    val descripcion: String
+    val nombre: String? = null,
+    val marca: String? = null,
+    val socket: String? = null,
+    val chipset: String? = null,
+    val formato: String? = null,
+    val tipoRam: String? = null,
+    val velocidadRamMax: String? = null,
+    val precioUsd: Double? = null,
+    val descripcion: String? = null,
+    val imageUrl: String? = null
 )
 
-fun MotherboardDto.toDomain(): Component.Motherboard {
+fun MotherboardDto.toDomain(idOverride: Int? = null): Component.Motherboard {
     return Component.Motherboard(
-        id = id,
-        name = nombre,
-        brand = marca,
-        socket = socket,
-        chipset = chipset,
-        format = formato,
-        ramType = tipoRam,
+        id = idOverride ?: id,
+        name = nombre ?: "Placa Base Desconocida",
+        brand = marca ?: "",
+        socket = socket ?: "",
+        chipset = chipset ?: "",
+        format = formato ?: "",
+        ramType = tipoRam ?: "",
         maxRamCapacity = velocidadRamMax,
-        price = precioUsd,
-        description = descripcion
+        price = precioUsd ?: 0.0,
+        description = descripcion ?: "",
+        imageUrl = imageUrl
     )
 }
