@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomeScreen(
@@ -41,10 +42,11 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(state.navigateToCart) {
-        if (state.navigateToCart) {
-            onCartClick()
-            viewModel.onEvent(HomeEvent.ResetNavigation)
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collectLatest { event ->
+            when (event) {
+                HomeNavigationEvent.NavigateToCart -> onCartClick()
+            }
         }
     }
 
@@ -141,42 +143,32 @@ fun HomeScreenContent(
                     }
                 }
             } else {
-                // Modo Amazon: Carruseles por Marca (solo en pestaña Todos y sin búsqueda)
+                // Modo Amazon
                 if (state.selectedCategory == null && state.searchQuery.isBlank()) {
-                    
-                    // Intel Section
                     if (state.intelComponents.isNotEmpty()) {
                         item {
                             SectionHeader("Procesadores Intel", "Potencia para gaming")
                             ComponentHorizontalRow(state.intelComponents, onComponentClick)
                         }
                     }
-
-                    // AMD CPU Section
                     if (state.amdCpuComponents.isNotEmpty()) {
                         item {
                             SectionHeader("Procesadores AMD Ryzen", "Eficiencia y núcleos")
                             ComponentHorizontalRow(state.amdCpuComponents, onComponentClick)
                         }
                     }
-
-                    // NVIDIA Section
                     if (state.nvidiaComponents.isNotEmpty()) {
                         item {
                             SectionHeader("NVIDIA GeForce RTX", "Ray Tracing y DLSS")
                             ComponentHorizontalRow(state.nvidiaComponents, onComponentClick)
                         }
                     }
-
-                    // Radeon Section
                     if (state.radeonComponents.isNotEmpty()) {
                         item {
                             SectionHeader("AMD Radeon RX", "Gráficos de alto nivel")
                             ComponentHorizontalRow(state.radeonComponents, onComponentClick)
                         }
                     }
-
-                    // Recently Viewed Section
                     if (state.recentlyViewed.isNotEmpty()) {
                         item {
                             SectionHeader("Recomendado para ti", "Visto recientemente")
@@ -185,7 +177,6 @@ fun HomeScreenContent(
                     }
                 }
 
-                // Main Feed / Filtered Results
                 item {
                     SectionHeader(
                         title = if (state.selectedCategory != null) "Categoría: ${state.selectedCategory}" else "Más componentes",
@@ -193,7 +184,6 @@ fun HomeScreenContent(
                     )
                 }
 
-                // Grid of components
                 if (state.filteredComponents.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
