@@ -10,7 +10,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.DarkMode
@@ -20,15 +23,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import dagger.hilt.android.AndroidEntryPoint
+import edu.ucne.corebuild.presentation.auth.AuthViewModel
+import edu.ucne.corebuild.presentation.auth.LoginScreen
+import edu.ucne.corebuild.presentation.auth.ProfileScreen
+import edu.ucne.corebuild.presentation.auth.RegisterScreen
 import edu.ucne.corebuild.presentation.bottleneck.BottleneckScreen
 import edu.ucne.corebuild.presentation.cart.CartScreen
 import edu.ucne.corebuild.presentation.comparator.ComparatorScreen
@@ -50,13 +64,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Solicitar permiso de notificaciones para Android 13+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = { isGranted ->
-                        // Permiso gestionado
-                    }
+                    onResult = { isGranted -> }
                 )
                 LaunchedEffect(Unit) {
                     launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -77,46 +88,90 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoreBuildAppContent() {
+fun CoreBuildAppContent(
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val authUiState by authViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
-                drawerTonalElevation = 4.dp
+                drawerTonalElevation = 4.dp,
+                modifier = Modifier.width(280.dp) // Drawer más pequeño (Material 3 default es 360dp)
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
-                Column(
-                    modifier = Modifier.padding(horizontal = 28.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Build,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "CoreBuild",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        "Crea tu PC ideal",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable {
+                                scope.launch { drawerState.close() }
+                                if (authUiState.isLogged) {
+                                    navController.navigate(Screen.Profile)
+                                } else {
+                                    navController.navigate(Screen.Login)
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (authUiState.user?.profilePicture != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(authUiState.user?.profilePicture)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Perfil",
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = if (authUiState.isLogged) authUiState.user?.name ?: "Usuario" else "Invitado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (authUiState.isLogged) "Ver perfil" else "Toca para iniciar sesión",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable {
+                                scope.launch { drawerState.close() }
+                                if (authUiState.isLogged) navController.navigate(Screen.Profile)
+                                else navController.navigate(Screen.Login)
+                            }
+                        )
+                    }
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 DrawerItem(
@@ -186,15 +241,7 @@ fun CoreBuildAppContent() {
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 28.dp))
-                
-                Text(
-                    "Apariencia",
-                    modifier = Modifier.padding(start = 28.dp, top = 16.dp, bottom = 12.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
                 
                 Row(
                     modifier = Modifier
@@ -220,86 +267,115 @@ fun CoreBuildAppContent() {
             navController = navController, 
             startDestination = Screen.Home,
             enterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)) { it } },
-            exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) { -it } },
-            popEnterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally(animationSpec = tween(300)) { -it } },
-            popExitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) { it } }
+            exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally(animationSpec = tween(300)) { -it } }
         ) {
             composable<Screen.Home> {
                 HomeScreen(
-                    onComponentClick = { id ->
-                        navController.navigate(Screen.Detail(id))
-                    },
-                    onCartClick = {
-                        navController.navigate(Screen.Cart)
-                    },
-                    onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    }
+                    onComponentClick = { id -> navController.navigate(Screen.Detail(id)) },
+                    onCartClick = { navController.navigate(Screen.Cart) },
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
-            composable<Screen.Favorites> {
-                FavoritesScreen(
-                    onComponentClick = { id ->
-                        navController.navigate(Screen.Detail(id))
-                    },
-                    onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    }
-                )
-            }
-            composable<Screen.Orders> {
-                OrdersScreen(
-                    onOrderClick = { id ->
-                        navController.navigate(Screen.OrderDetail(id))
-                    },
-                    onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    }
-                )
-            }
-            composable<Screen.OrderDetail> { backStackEntry ->
-                val detail: Screen.OrderDetail = backStackEntry.toRoute()
-                OrderDetailScreen(
-                    orderId = detail.orderId,
+            composable<Screen.Login> {
+                LoginScreen(
+                    onLoginSuccess = { navController.popBackStack() },
+                    onRegisterClick = { navController.navigate(Screen.Register) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
-            composable<Screen.Detail> { backStackEntry ->
-                val detail: Screen.Detail = backStackEntry.toRoute()
-                ProductDetailScreen(
-                    id = detail.id,
+            composable<Screen.Register> {
+                RegisterScreen(
+                    onRegisterSuccess = { navController.popBackStack() },
+                    onLoginClick = { navController.navigate(Screen.Login) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable<Screen.Profile> {
+                ProfileScreen(
                     onBackClick = { navController.popBackStack() },
-                    onCartClick = { navController.navigate(Screen.Cart) }
+                    onLogoutSuccess = { navController.navigate(Screen.Home) { popUpTo(Screen.Home) { inclusive = true } } }
                 )
             }
             composable<Screen.Cart> {
                 CartScreen(
                     onBackClick = { navController.popBackStack() },
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onNavigateToLogin = { navController.navigate(Screen.Login) },
+                    onNavigateToThanks = { navController.navigate(Screen.Thanks) }
+                )
+            }
+            composable<Screen.Thanks> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(100.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "¡Gracias por tu compra!",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Estamos preparando tu hardware. Recibirás una notificación cuando sea entregado.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(48.dp))
+                    Button(
+                        onClick = { 
+                            navController.navigate(Screen.Home) { 
+                                popUpTo(Screen.Home) { inclusive = true } 
+                            } 
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large
+                    ) {
+                        Text("Ir al inicio")
+                    }
+                }
+            }
+            composable<Screen.Favorites> {
+                FavoritesScreen(
+                    onComponentClick = { id -> navController.navigate(Screen.Detail(id)) },
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
-            composable<Screen.Comparator> {
-                ComparatorScreen(
-                    onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    }
+            composable<Screen.Orders> {
+                OrdersScreen(
+                    onOrderClick = { id -> navController.navigate(Screen.OrderDetail(id)) },
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
+            composable<Screen.OrderDetail> { backStackEntry ->
+                val detail: Screen.OrderDetail = backStackEntry.toRoute()
+                OrderDetailScreen(orderId = detail.orderId, onBackClick = { navController.popBackStack() })
+            }
+            composable<Screen.Detail> { backStackEntry ->
+                val detail: Screen.Detail = backStackEntry.toRoute()
+                ProductDetailScreen(id = detail.id, onBackClick = { navController.popBackStack() }, onCartClick = { navController.navigate(Screen.Cart) })
+            }
+            composable<Screen.Comparator> {
+                ComparatorScreen(onMenuClick = { scope.launch { drawerState.open() } })
+            }
             composable<Screen.Bottleneck> {
-                BottleneckScreen(
-                    onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    }
-                )
+                BottleneckScreen(onMenuClick = { scope.launch { drawerState.open() } })
             }
             composable<Screen.Recommendation> {
                 RecommendationScreen(
-                 onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    },
-                    onComponentClick = { id ->
-                        navController.navigate(Screen.Detail(id))
-                    }
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onComponentClick = { id -> navController.navigate(Screen.Detail(id)) }
                 )
             }
         }
@@ -307,12 +383,7 @@ fun CoreBuildAppContent() {
 }
 
 @Composable
-fun DrawerItem(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+fun DrawerItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
     NavigationDrawerItem(
         icon = { Icon(icon, contentDescription = null) },
         label = { Text(label) },
@@ -323,11 +394,7 @@ fun DrawerItem(
 }
 
 @Composable
-fun ThemeOption(
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+fun ThemeOption(icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
