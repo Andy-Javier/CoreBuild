@@ -8,9 +8,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,7 +143,8 @@ fun ComparisonContent(c1: Component, c2: Component) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 ComparisonHeader(c1, Modifier.weight(1f))
                 VerticalDivider(modifier = Modifier.padding(horizontal = 8.dp))
@@ -170,11 +174,21 @@ fun ComparisonContent(c1: Component, c2: Component) {
 @Composable
 fun ComparisonHeader(component: Component, modifier: Modifier) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        AsyncImage(
+            model = component.imageUrl ?: "https://via.placeholder.com/150",
+            contentDescription = component.name,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(MaterialTheme.shapes.medium),
+            contentScale = ContentScale.Fit
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = component.name,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            maxLines = 2
+            maxLines = 2,
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
     }
 }

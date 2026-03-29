@@ -12,11 +12,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.Component
 import kotlinx.coroutines.launch
 
@@ -228,73 +233,95 @@ fun ProductDetailContent(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp)
                     ) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-                            ),
-                            shape = MaterialTheme.shapes.extraLarge
+                        // Imagen de cabecera grande con User-Agent para evitar bloqueo de Drive
+                        Box(
+                            modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                                    .padding(16.dp)
                         ) {
-                            Column(modifier = Modifier.padding(24.dp)) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    shape = MaterialTheme.shapes.small
-                                ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(component.imageUrl ?: "https://via.placeholder.com/500")
+                                    .addHeader("User-Agent", "Mozilla/5.0")
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = component.name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+                                ),
+                                shape = MaterialTheme.shapes.extraLarge
+                            ) {
+                                Column(modifier = Modifier.padding(24.dp)) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(
+                                            text = component.category.uppercase(),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Text(
-                                        text = component.category.uppercase(),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        text = component.name,
+                                        style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.Bold
                                     )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = component.description,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = component.name,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            }
+                            
+                            if (state.currentInCart > 0) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = component.description,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
-                                )
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                    shape = MaterialTheme.shapes.medium,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Ya tienes ${state.currentInCart} unidades en el carrito.",
+                                        modifier = Modifier.padding(12.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            Text(
+                                "Especificaciones Técnicas",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            SpecificComponentDetails(component)
+                            
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
-                        
-                        if (state.currentInCart > 0) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                shape = MaterialTheme.shapes.medium,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "Ya tienes ${state.currentInCart} unidades en el carrito.",
-                                    modifier = Modifier.padding(12.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        Text(
-                            "Especificaciones Técnicas",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        SpecificComponentDetails(component)
-                        
-                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }

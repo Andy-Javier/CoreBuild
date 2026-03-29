@@ -4,33 +4,30 @@ import edu.ucne.corebuild.domain.model.Component
 
 data class GpuDto(
     val id: Int,
-    val nombre: String,
-    val marca: String,
-    val chipset: String,
-    val vram: String,
-    val tipoVram: String,
-    val busMemoria: String,
-    val frecuenciaBase: String,
-    val frecuenciaBoost: String,
-    val consumoWatts: Int,
-    val fuenteRecomendada: String,
-    val conectoresEnergia: String,
-    val versionPcie: String,
-    val precioUsd: Double,
-    val descripcion: String
+    val nombre: String? = null,
+    val marca: String? = null,
+    val chipset: String? = null,
+    val vram: String? = null,
+    val tipoVram: String? = null,
+    val consumoWatts: Int? = null,
+    val versionPcie: String? = null,
+    val precioUsd: Double? = null,
+    val descripcion: String? = null,
+    val imageUrl: String? = null
 )
 
-fun GpuDto.toDomain(): Component.GPU {
+fun GpuDto.toDomain(idOverride: Int? = null): Component.GPU {
     return Component.GPU(
-        id = id,
-        name = nombre,
-        brand = marca,
-        chipset = chipset,
-        vram = vram,
-        vramType = tipoVram,
-        recommendedWattage = consumoWatts.toString(),
+        id = idOverride ?: id,
+        name = nombre ?: "GPU Desconocida",
+        brand = marca ?: "",
+        chipset = chipset ?: "",
+        vram = vram ?: "",
+        vramType = tipoVram ?: "",
+        recommendedWattage = (consumoWatts ?: 0).toString(),
         pcieInterface = versionPcie,
-        price = precioUsd,
-        description = descripcion
+        price = precioUsd ?: 0.0,
+        description = descripcion ?: "",
+        imageUrl = imageUrl
     )
 }

@@ -11,6 +11,7 @@ data class ComponentEntity(
     val price: Double,
     val category: String,
     val componentType: String, // CPU, GPU, Motherboard, RAM, PSU
+    val imageUrl: String? = null,
     
     val brand: String? = null,
     

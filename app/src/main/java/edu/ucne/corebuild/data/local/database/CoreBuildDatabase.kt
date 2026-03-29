@@ -13,7 +13,7 @@ import edu.ucne.corebuild.data.local.entity.*
         FavoriteEntity::class,
         CartEntity::class
     ],
-    version = 2,
+    version = 150,
     exportSchema = false
 )
 abstract class CoreBuildDatabase : RoomDatabase() {

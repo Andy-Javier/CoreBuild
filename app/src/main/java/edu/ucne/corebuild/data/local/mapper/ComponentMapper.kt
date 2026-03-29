@@ -20,7 +20,8 @@ fun ComponentEntity.toDomain(): Component {
             tdp = tdp ?: "",
             cache = cache,
             integratedGraphics = integratedGraphics,
-            category = category
+            category = category,
+            imageUrl = imageUrl
         )
         "GPU" -> Component.GPU(
             id = id,
@@ -34,7 +35,8 @@ fun ComponentEntity.toDomain(): Component {
             recommendedWattage = recommendedWattage ?: "",
             pcieInterface = pcieInterface,
             length = length,
-            category = category
+            category = category,
+            imageUrl = imageUrl
         )
         "Motherboard" -> Component.Motherboard(
             id = id,
@@ -48,7 +50,8 @@ fun ComponentEntity.toDomain(): Component {
             ramType = motherboardRamType ?: "",
             maxRamCapacity = maxRamCapacity,
             slotsM2 = slotsM2,
-            category = category
+            category = category,
+            imageUrl = imageUrl
         )
         "RAM" -> Component.RAM(
             id = id,
@@ -62,7 +65,8 @@ fun ComponentEntity.toDomain(): Component {
             latency = ramLatency ?: "",
             voltage = voltage,
             hasRGB = hasRGB,
-            category = category
+            category = category,
+            imageUrl = imageUrl
         )
         "PSU" -> Component.PSU(
             id = id,
@@ -75,7 +79,8 @@ fun ComponentEntity.toDomain(): Component {
             modularity = psuModularity ?: "",
             fanSize = fanSize,
             protection = protection,
-            category = category
+            category = category,
+            imageUrl = imageUrl
         )
         else -> throw IllegalArgumentException("Unknown component type: $componentType")
     }
@@ -87,27 +92,29 @@ fun Component.toEntity(): ComponentEntity {
             id = id, name = name, description = description, price = price, category = category,
             componentType = "CPU", brand = brand, socket = socket, generation = generation,
             cores = cores, threads = threads, baseClock = baseClock, boostClock = boostClock, 
-            tdp = tdp, cache = cache, integratedGraphics = integratedGraphics
+            tdp = tdp, cache = cache, integratedGraphics = integratedGraphics, imageUrl = imageUrl
         )
         is Component.GPU -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
             componentType = "GPU", brand = brand, chipset = chipset, vram = vram, vramType = vramType,
-            recommendedWattage = recommendedWattage, pcieInterface = pcieInterface, length = length
+            recommendedWattage = recommendedWattage, pcieInterface = pcieInterface, length = length,
+            imageUrl = imageUrl
         )
         is Component.Motherboard -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
             componentType = "Motherboard", brand = brand, socket = socket, chipset = chipset,
-            format = format, motherboardRamType = ramType, maxRamCapacity = maxRamCapacity, slotsM2 = slotsM2
+            format = format, motherboardRamType = ramType, maxRamCapacity = maxRamCapacity, 
+            slotsM2 = slotsM2, imageUrl = imageUrl
         )
         is Component.RAM -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
-            componentType = "RAM", brand = brand, ramType = type, ramCapacity = capacity,
-            ramSpeed = speed, ramLatency = latency, voltage = voltage, hasRGB = hasRGB
+            componentType = "RAM", brand = brand, motherboardRamType = type, ramCapacity = capacity,
+            ramSpeed = speed, ramLatency = latency, voltage = voltage, hasRGB = hasRGB, imageUrl = imageUrl
         )
         is Component.PSU -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
             componentType = "PSU", brand = brand, psuWattage = wattage, psuCertification = certification,
-            psuModularity = modularity, fanSize = fanSize, protection = protection
+            psuModularity = modularity, fanSize = fanSize, protection = protection, imageUrl = imageUrl
         )
     }
 }
