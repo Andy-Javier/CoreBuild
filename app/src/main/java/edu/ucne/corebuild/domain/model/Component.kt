@@ -3,7 +3,9 @@ package edu.ucne.corebuild.domain.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.JsonClassDiscriminator
+import kotlinx.serialization.ExperimentalSerializationApi
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("component_class")
 sealed class Component {
@@ -46,7 +48,8 @@ sealed class Component {
         val chipset: String,
         val vram: String,
         val vramType: String,
-        val recommendedWattage: String,
+        val consumptionWatts: String,
+        val recommendedPSU: String? = null,
         val pcieInterface: String? = null,
         val length: String? = null,
         override val category: String = "Tarjeta Gráfica",
