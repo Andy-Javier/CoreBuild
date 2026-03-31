@@ -234,7 +234,6 @@ fun ProductDetailContent(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        // Imagen de cabecera grande con User-Agent para evitar bloqueo de Drive
                         Box(
                             modifier = Modifier
                                     .fillMaxWidth()
@@ -395,7 +394,10 @@ fun SpecificComponentDetails(component: Component) {
                     DetailRow("Marca", component.brand)
                     DetailRow("Chipset", component.chipset)
                     DetailRow("VRAM", "${component.vram} ${component.vramType}")
-                    DetailRow("Potencia Rec.", component.recommendedWattage)
+                    DetailRow("Consumo", "${component.consumptionWatts}W")
+                    component.recommendedPSU?.let {
+                        DetailRow("Fuente Recomendada", it)
+                    }
                 }
                 is Component.Motherboard -> {
                     DetailRow("Marca", component.brand)

@@ -31,6 +31,7 @@ data class ComponentEntity(
     val vram: String? = null,
     val vramType: String? = null,
     val recommendedWattage: String? = null,
+    val recommendedPSU: String? = null,
     val pcieInterface: String? = null,
     val length: String? = null,
     

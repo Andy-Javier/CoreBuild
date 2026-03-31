@@ -129,9 +129,37 @@ fun RecommendationScreen(
                             RecommendedItem(component, onComponentClick)
                         }
                         item {
+                            val budgetVal = uiState.budget.toDoubleOrNull() ?: 0.0
+                            val remaining = budgetVal - uiState.totalPrice
+                            
                             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                             SummaryRow("Total Estimado:", "$${String.format("%.2f", uiState.totalPrice)}", true)
-                            SummaryRow("Presupuesto Restante:", "$${String.format("%.2f", (uiState.budget.toDoubleOrNull() ?: 0.0) - uiState.totalPrice)}", false)
+                            
+                            if (remaining < 0) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "⚠️ Supera tu presupuesto por $${String.format("%.2f", -remaining)}",
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            } else {
+                                SummaryRow("Presupuesto Restante:", "$${String.format("%.2f", remaining)}", false)
+                            }
                         }
                     }
                 }

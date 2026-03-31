@@ -166,7 +166,8 @@ fun ComparisonContent(c1: Component, c2: Component) {
         if (c1 is Component.GPU && c2 is Component.GPU) {
             item { ComparisonRow("VRAM", c1.vram, c2.vram) }
             item { ComparisonRow("Tipo VRAM", c1.vramType, c2.vramType) }
-            item { ComparisonRow("PSU Rec.", c1.recommendedWattage, c2.recommendedWattage) }
+            item { ComparisonRow("Consumo", "${c1.consumptionWatts}W", "${c2.consumptionWatts}W") }
+            item { ComparisonRow("Fuente Rec.", c1.recommendedPSU ?: "N/A", c2.recommendedPSU ?: "N/A") }
         }
     }
 }

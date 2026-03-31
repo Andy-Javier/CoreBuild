@@ -3,6 +3,7 @@ package edu.ucne.corebuild.domain.recommendation
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.model.Component
 import javax.inject.Inject
+import kotlin.math.ceil
 
 class BuildRecommender @Inject constructor(
     private val compatibilityEngine: CompatibilityEngine
@@ -22,82 +23,77 @@ class BuildRecommender @Inject constructor(
 
         if (cpus.isEmpty() || mobos.isEmpty() || rams.isEmpty() || psus.isEmpty()) return emptyList()
 
-
+        // 1. Encontrar el build más barato posible (cheapestViableBuild)
         var cheapestViableBuild: List<Component>? = null
-        var minPrice = Double.MAX_VALUE
+        var absoluteMinPrice = Double.MAX_VALUE
 
         for (cpu in cpus) {
-            val compatibleMobo = mobos.find { isSocketCompatible(cpu.socket, it.socket) } ?: continue
-            val compatibleRam = rams.find { isRamCompatible(compatibleMobo.ramType, it.type) } ?: continue
-            val compatiblePsu = psus.firstOrNull() ?: continue 
-
-            val total = cpu.price + compatibleMobo.price + compatibleRam.price + compatiblePsu.price
-            if (total < minPrice) {
-                minPrice = total
-                cheapestViableBuild = listOf(cpu, compatibleMobo, compatibleRam, compatiblePsu)
+            val mobo = mobos.find { isSocketCompatible(cpu.socket, it.socket) } ?: continue
+            val ram = rams.find { isRamCompatible(mobo.ramType, it.type) } ?: continue
+            val psu = psus.firstOrNull() ?: continue
+            
+            val total = cpu.price + mobo.price + ram.price + psu.price
+            if (total < absoluteMinPrice) {
+                absoluteMinPrice = total
+                cheapestViableBuild = listOf(cpu, mobo, ram, psu)
             }
         }
 
-        if (cheapestViableBuild == null || minPrice > budget) {
-            return emptyList()
-        }
+        // Si ni el build más barato entra en el presupuesto, no podemos recomendar nada
+        if (cheapestViableBuild == null || absoluteMinPrice > budget) return emptyList()
 
+        var recommendedBuild: List<Component>? = null
 
-        
+        // 2. Lógica de recomendación según prioridad
         if (priority == "GPU" && gpus.isNotEmpty()) {
             for (gpu in gpus.reversed()) {
-                val remainingForEssentials = budget - gpu.price
-                if (remainingForEssentials < (minPrice - (gpus.firstOrNull()?.price ?: 0.0))) {
-
-                    continue
+                val remaining = budget - gpu.price
+                if (remaining < 0) continue
+                
+                // Iterar CPUs de mejor a peor para encontrar compatibilidad
+                for (cpu in cpus.reversed()) {
+                    val essentialsBudget = remaining - cpu.price
+                    val essentials = findBestEssentialsForCpu(essentialsBudget, cpu, mobos, rams, psus, gpu)
+                    if (essentials.isNotEmpty()) {
+                        val build = listOf(gpu, cpu) + essentials
+                        if (build.sumOf { it.price } <= budget) {
+                            recommendedBuild = build
+                            break
+                        }
+                    }
                 }
-                val bestEssentials = findBestEssentialsForGpu(remainingForEssentials, cpus, mobos, rams, psus)
-                if (bestEssentials.isNotEmpty()) {
-                    return listOf(gpu) + bestEssentials
-                }
+                if (recommendedBuild != null) break
             }
         } else {
-
-            for (cpu in cpus.reversed()) {
+            val gpuRatio = if (priority == "CPU") 0.25 else 0.35
+            val cpuLimit = budget * 0.5
+            val cpusToTry = cpus.filter { it.price <= cpuLimit }.sortedByDescending { it.price }
+            
+            for (cpu in cpusToTry) {
                 val remainingForOthers = budget - cpu.price
-                if (remainingForOthers < (minPrice - cpus.first().price)) continue
+                val compatibleGpus = gpus.filter { it.price <= remainingForOthers * 0.8 }.sortedByDescending { it.price }
                 
-
-                val gpuAllocation = if (priority == "CPU") 0.3 else 0.5
-                val gpuBudget = remainingForOthers * gpuAllocation
-                
-                val compatibleGpus = gpus.filter { it.price <= gpuBudget }.sortedByDescending { it.price }
-                
-                for (gpu in (listOf(null) + compatibleGpus)) {
-                    val finalBudget = remainingForOthers - (gpu?.price ?: 0.0)
-                    val essentials = findBestEssentialsForCpu(finalBudget, cpu, mobos, rams, psus)
+                if (compatibleGpus.isNotEmpty()) {
+                    val targetGpuPrice = remainingForOthers * gpuRatio
+                    val selectedGpu = compatibleGpus.find { it.price <= targetGpuPrice } ?: compatibleGpus.last()
+                    
+                    val finalBudget = remainingForOthers - selectedGpu.price
+                    val essentials = findBestEssentialsForCpu(finalBudget, cpu, mobos, rams, psus, selectedGpu)
+                    
                     if (essentials.isNotEmpty()) {
-                        val build = mutableListOf<Component>(cpu)
-                        if (gpu != null) build.add(gpu)
-                        build.addAll(essentials)
-                        return build
+                        val build = listOf(cpu, selectedGpu) + essentials
+                        if (build.sumOf { it.price } <= budget) {
+                            recommendedBuild = build
+                            break
+                        }
                     }
                 }
             }
         }
 
-        return cheapestViableBuild
-    }
-
-    private fun findBestEssentialsForGpu(
-        budget: Double,
-        cpus: List<Component.CPU>,
-        mobos: List<Component.Motherboard>,
-        rams: List<Component.RAM>,
-        psus: List<Component.PSU>
-    ): List<Component> {
-
-        for (cpu in cpus.reversed()) {
-            val remaining = budget - cpu.price
-            val essentials = findBestEssentialsForCpu(remaining, cpu, mobos, rams, psus)
-            if (essentials.isNotEmpty()) return listOf(cpu) + essentials
-        }
-        return emptyList()
+        // Fallback final: Si nada funcionó, devolver el build más barato garantizado
+        val finalResult = recommendedBuild ?: cheapestViableBuild
+        return if (finalResult.sumOf { it.price } <= budget) finalResult else cheapestViableBuild
     }
 
     private fun findBestEssentialsForCpu(
@@ -105,26 +101,41 @@ class BuildRecommender @Inject constructor(
         cpu: Component.CPU,
         mobos: List<Component.Motherboard>,
         rams: List<Component.RAM>,
-        psus: List<Component.PSU>
+        psus: List<Component.PSU>,
+        gpu: Component.GPU?
     ): List<Component> {
-        val compatibleMobos = mobos.filter { isSocketCompatible(cpu.socket, it.socket) }.sortedByDescending { it.price }
+        val minWatts = if (gpu != null) {
+            val manufacturerRec = Regex("""\d+""").find(gpu.recommendedPSU ?: "")?.value?.toIntOrNull()
+            if (manufacturerRec != null) {
+                manufacturerRec
+            } else {
+                val cpuWatts = Regex("""\d+""").find(cpu.tdp ?: "")?.value?.toIntOrNull() ?: 65
+                val gpuCons = Regex("""\d+""").find(gpu.consumptionWatts ?: "")?.value?.toIntOrNull() ?: 200
+                (ceil((cpuWatts + gpuCons) * 1.2 / 50.0) * 50).toInt()
+            }
+        } else {
+            450
+        }
+
+        val compatibleMobos = mobos.filter { 
+            isSocketCompatible(cpu.socket, it.socket) && it.price <= budget * 0.5 
+        }.sortedByDescending { it.price }
+        
         for (mobo in compatibleMobos) {
-            val remainingAfterMobo = budget - mobo.price
-            if (remainingAfterMobo < 0) continue
+            val remaining = budget - mobo.price
+            if (remaining < 0) continue
             
-            val compatibleRams = rams.filter { isRamCompatible(mobo.ramType, it.type) }.sortedByDescending { it.price }
-            // Try to find a RAM that fits nicely but leave room for PSU
-            val selectedRam = compatibleRams.find { it.price <= remainingAfterMobo * 0.6 } ?: compatibleRams.lastOrNull()
+            val compatibleRams = rams.filter { isRamCompatible(mobo.ramType, it.type) && it.price <= remaining * 0.7 }
+            val selectedRam = compatibleRams.maxByOrNull { it.price } ?: rams.lastOrNull() ?: continue
             
-            if (selectedRam != null) {
-                val psuBudget = remainingAfterMobo - selectedRam.price
-                if (psuBudget < 0) continue
-                
-                val selectedPsu = psus.reversed().find { it.price <= psuBudget } ?: psus.firstOrNull()
-                
-                if (selectedPsu != null && selectedPsu.price <= psuBudget) {
-                    return listOf(mobo, selectedRam, selectedPsu)
-                }
+            val psuBudget = remaining - selectedRam.price
+            if (psuBudget < 0) continue
+            
+            // PSU Estricta: Solo si cumple Watts Y presupuesto
+            val selectedPsu = psus.filter { it.wattage >= minWatts && it.price <= psuBudget }.maxByOrNull { it.price }
+            
+            if (selectedPsu != null) {
+                return listOf(mobo, selectedRam, selectedPsu)
             }
         }
         return emptyList()

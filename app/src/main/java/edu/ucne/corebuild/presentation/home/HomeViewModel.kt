@@ -157,8 +157,8 @@ class HomeViewModel @Inject constructor(
         if (mobo == null) return null
             
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
-        
-        val gpuRecWatts = gpu.recommendedWattage.filter { it.isDigit() }.toIntOrNull() ?: 600
+
+        val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
         // Añadimos un pequeño buffer de seguridad a la fuente
         val psu = psus.filter { it.wattage >= gpuRecWatts }
             .minByOrNull { it.wattage } 
