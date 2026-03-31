@@ -27,13 +27,13 @@ class CompatibilityEngine @Inject constructor() {
 
         // GPU vs PSU (Wattage)
         if (gpus.isNotEmpty() && psus.isNotEmpty()) {
-            val totalRecommendedWattage = gpus.sumOf { gpu ->
-                gpu.recommendedWattage.filter { it.isDigit() }.toIntOrNull() ?: 0
+            val totalConsumptionWatts = gpus.sumOf { gpu ->
+                gpu.consumptionWatts.filter { it.isDigit() }.toIntOrNull() ?: 0
             }
             val maxPsuWattage = psus.maxOf { it.wattage }
             
-            if (maxPsuWattage < totalRecommendedWattage) {
-                warnings.add("⚠️ Potencia Insuficiente: La fuente de poder ($maxPsuWattage W) podría no ser suficiente para la tarjeta gráfica (Recomendado: $totalRecommendedWattage W).")
+            if (maxPsuWattage < totalConsumptionWatts) {
+                warnings.add("⚠️ Potencia Insuficiente: La fuente de poder ($maxPsuWattage W) podría no ser suficiente para la tarjeta gráfica (Consumo: $totalConsumptionWatts W).")
             }
         }
 
