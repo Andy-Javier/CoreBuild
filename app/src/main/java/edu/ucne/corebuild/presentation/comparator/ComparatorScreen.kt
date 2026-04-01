@@ -3,14 +3,11 @@ package edu.ucne.corebuild.presentation.comparator
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Menu
@@ -22,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -116,11 +114,16 @@ fun ComparisonMatrix(c1: Component, c2: Component) {
             c1 is Component.CPU && c2 is Component.CPU -> listOf(
                 Metric("Núcleos", c1.cores.toDouble(), c2.cores.toDouble(), "${c1.cores}", "${c2.cores}"),
                 Metric("Hilos", c1.threads.toDouble(), c2.threads.toDouble(), "${c1.threads}", "${c2.threads}"),
-                Metric("Precio", c1.price, c2.price, "$${c1.price}", "$${c2.price}", inverse = true)
+                Metric("Boost Clock", parseGhz(c1.boostClock), parseGhz(c2.boostClock), c1.boostClock, c2.boostClock),
+                Metric("Base Clock", parseGhz(c1.baseClock), parseGhz(c2.baseClock), c1.baseClock, c2.baseClock),
+                Metric("Caché L3", parseMb(c1.cache), parseMb(c2.cache), c1.cache ?: "N/A", c2.cache ?: "N/A"),
+                Metric("TDP", parseWatts(c1.tdp), parseWatts(c2.tdp), c1.tdp ?: "N/A", c2.tdp ?: "N/A", inverse = true),
+                Metric("Precio", c1.price, c2.price, "$${c1.price.toInt()}", "$${c2.price.toInt()}", inverse = true)
             )
             c1 is Component.GPU && c2 is Component.GPU -> listOf(
                 Metric("VRAM", extractValue(c1.vram), extractValue(c2.vram), c1.vram, c2.vram),
-                Metric("Precio", c1.price, c2.price, "$${c1.price}", "$${c2.price}", inverse = true)
+                Metric("Consumo", parseWatts(c1.consumptionWatts), parseWatts(c2.consumptionWatts), c1.consumptionWatts, c2.consumptionWatts, inverse = true),
+                Metric("Precio", c1.price, c2.price, "$${c1.price.toInt()}", "$${c2.price.toInt()}", inverse = true)
             )
             else -> emptyList()
         }
@@ -133,9 +136,28 @@ fun ComparisonMatrix(c1: Component, c2: Component) {
 
 @Composable
 fun WinnerHeader(c1: Component, c2: Component) {
+    val score1 = when (c1) {
+        is Component.CPU -> cpuPerformanceScore(c1)
+        is Component.GPU -> gpuPerformanceScore(c1)
+        else -> 0.0
+    }
+    val score2 = when (c2) {
+        is Component.CPU -> cpuPerformanceScore(c2)
+        is Component.GPU -> gpuPerformanceScore(c2)
+        else -> 0.0
+    }
+
     val winner = when {
-        c1.price > c2.price -> c1
-        c2.price > c1.price -> c2
+        score1 > score2 -> c1
+        score2 > score1 -> c2
+        else -> null
+    }
+
+    val vfm1 = if (c1.price > 0) score1 / c1.price else 0.0
+    val vfm2 = if (c2.price > 0) score2 / c2.price else 0.0
+    val bestVfm = when {
+        vfm1 > vfm2 * 1.05 -> c1.name
+        vfm2 > vfm1 * 1.05 -> c2.name
         else -> null
     }
 
@@ -143,14 +165,24 @@ fun WinnerHeader(c1: Component, c2: Component) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD700))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = if (winner != null) "El mejor rendimiento estimado: ${winner.name}" else "Rendimiento equilibrado",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFFFD700))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = if (winner != null) "Mejor rendimiento estimado: ${winner.name}" else "Rendimiento equiparable",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (bestVfm != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Mejor valor/precio: $bestVfm",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -160,12 +192,19 @@ fun ComparisonBar(metric: Metric) {
     val color1 = if (metric.v1 == metric.v2) Color.Gray else if ((metric.v1 > metric.v2 && !metric.inverse) || (metric.v1 < metric.v2 && metric.inverse)) Color(0xFF4CAF50) else Color(0xFFE57373)
     val color2 = if (metric.v1 == metric.v2) Color.Gray else if ((metric.v2 > metric.v1 && !metric.inverse) || (metric.v2 < metric.v1 && metric.inverse)) Color(0xFF4CAF50) else Color(0xFFE57373)
 
+    val total = metric.v1 + metric.v2
+    val ratio1 = if (total > 0) (metric.v1 / total).toFloat().coerceIn(0.05f, 0.95f) else 0.5f
+    val ratio2 = 1f - ratio1
+
+    val animRatio1 by animateFloatAsState(targetValue = ratio1, label = "bar1")
+    val animRatio2 by animateFloatAsState(targetValue = ratio2, label = "bar2")
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(metric.label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             // Lado 1
-            Box(modifier = Modifier.weight(1f).height(12.dp).clip(CircleShape).background(color1))
+            Box(modifier = Modifier.weight(animRatio1).height(12.dp).clip(CircleShape).background(color1))
             
             // Valores
             Row(modifier = Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -175,7 +214,25 @@ fun ComparisonBar(metric: Metric) {
             }
 
             // Lado 2
-            Box(modifier = Modifier.weight(1f).height(12.dp).clip(CircleShape).background(color2))
+            Box(modifier = Modifier.weight(animRatio2).height(12.dp).clip(CircleShape).background(color2))
+        }
+
+        val diff = if (metric.v2 > 0 && metric.v1 != metric.v2) {
+            val pct = ((maxOf(metric.v1, metric.v2) - minOf(metric.v1, metric.v2))
+                    / minOf(metric.v1, metric.v2) * 100).toInt()
+            val winner = if ((metric.v1 > metric.v2 && !metric.inverse) ||
+                            (metric.v1 < metric.v2 && metric.inverse)) "C1" else "C2"
+            "+$pct% mejor en $winner"
+        } else null
+
+        if (diff != null) {
+            Text(
+                diff,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -200,6 +257,7 @@ fun ComponentSelector(
                 Text(
                     text = selected?.name ?: "Seleccionar",
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (selected != null) FontWeight.Bold else FontWeight.Normal
                 )
@@ -220,6 +278,25 @@ fun ComponentSelector(
     }
 }
 
-data class Metric(val label: String, val v1: Double, val v2: Double, val t1: String, val t2: String, val inverse: Boolean = false)
+private fun extractValue(text: String): Double =
+    Regex("""[\d.]+""").find(text)?.value?.toDoubleOrNull() ?: 0.0
 
-fun extractValue(text: String): Double = text.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
+private fun parseGhz(text: String): Double =
+    Regex("""[\d.]+""").find(text)?.value?.toDoubleOrNull() ?: 0.0
+
+private fun parseMb(text: String?): Double =
+    Regex("""\d+""").find(text ?: "")?.value?.toDoubleOrNull() ?: 0.0
+
+private fun parseWatts(text: String?): Double =
+    Regex("""\d+""").find(text ?: "")?.value?.toDoubleOrNull() ?: 0.0
+
+private fun cpuPerformanceScore(cpu: Component.CPU): Double {
+    val boostGhz = parseGhz(cpu.boostClock)
+    return cpu.cores * boostGhz
+}
+
+private fun gpuPerformanceScore(gpu: Component.GPU): Double {
+    return parseWatts(gpu.consumptionWatts)
+}
+
+data class Metric(val label: String, val v1: Double, val v2: Double, val t1: String, val t2: String, val inverse: Boolean = false)
