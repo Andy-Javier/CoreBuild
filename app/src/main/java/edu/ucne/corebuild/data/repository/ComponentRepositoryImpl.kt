@@ -107,9 +107,9 @@ class ComponentRepositoryImpl @Inject constructor(
 
     private fun determineCpuImage(name: String, gen: String): String? {
         val search = "$name $gen".lowercase()
+        val nameOnly = name.lowercase()
 
         val amd3000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_3000_l7gbgt.jpg"
-        val amd4000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741851/Ryzen_4000_isyqkf.png"
         val amd5000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741841/Ryzen_5000_waljfw.jpg"
         val amd7000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741951/Ryzen_7000_flhzjd.jpg"
         val amd9000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_9000_pwufy0.jpg"
@@ -121,36 +121,38 @@ class ComponentRepositoryImpl @Inject constructor(
         val intel11gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746405/imagen_2026-03-28_210642931_csxqqh.png"
         val intel10gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774745942/imagen_2026-03-28_205900911_jizp1k.png"
 
-        return when {
-            // Intel Arrow Lake — primero para evitar falsos positivos con "ultra"
-            search.contains("ultra") || search.contains("245k") || search.contains("265k") || search.contains("285k") -> intelArrowLake
-            // Intel por generación (el guión + número identifica el modelo sin ambigüedad)
-            search.contains("-14") || search.contains("14th gen") || search.contains("14a gen") -> intel14gen
-            search.contains("-13") || search.contains("13th gen") || search.contains("13a gen") -> intel13gen
-            search.contains("-12") || search.contains("12th gen") || search.contains("12a gen") -> intel12gen
-            search.contains("-11") || search.contains("11th gen") || search.contains("11a gen") -> intel11gen
-            search.contains("-10") || search.contains("10th gen") || search.contains("10a gen") -> intel10gen
-            // AMD Zen 3 — antes que Zen 2 para evitar que 5xxx choque con otros patrones
-            search.contains("5950") || search.contains("5900") || search.contains("5800") ||
-                    search.contains("5700") || search.contains("5600") || search.contains("5500") ||
-                    search.contains("zen 3") -> amd5000
-            // AMD Zen 5
-            search.contains("9950") || search.contains("9900") || search.contains("9800") ||
-                    search.contains("9700") || search.contains("9600") || search.contains("zen 5") -> amd9000
-            // AMD Zen 4
-            search.contains("7950") || search.contains("7900") || search.contains("7800") ||
-                    search.contains("7700") || search.contains("7600") || search.contains("7500") ||
-                    search.contains("zen 4") -> amd7000
-            // Zen 2 con número de modelo 4xxx (Ryzen 3 4100 y Ryzen 5 4500)
-            search.contains("4100") || search.contains("4500") -> amd3000
-            // Zen 2 con número de modelo 4xxx real (Ryzen 4000 mobile / APU)
-            search.contains("4700") || search.contains("4600") || search.contains("4300") -> amd4000
-            // AMD Zen 2 estándar
-            search.contains("3950") || search.contains("3900") || search.contains("3800") ||
-                    search.contains("3700") || search.contains("3600") || search.contains("3300") ||
-                    search.contains("3100") || search.contains("zen 2") -> amd3000
-            else -> null
+        // 1. Clasificación Intel - Mantenemos search combinado para Intel
+        if (search.contains("intel") || search.contains("core")) {
+            return when {
+                search.contains("ultra") || search.contains("245k") || search.contains("265k") || search.contains("285k") -> intelArrowLake
+                search.contains("-14") || search.contains("14th gen") || search.contains("14a gen") -> intel14gen
+                search.contains("-13") || search.contains("13th gen") || search.contains("13a gen") -> intel13gen
+                search.contains("-12") || search.contains("12th gen") || search.contains("12a gen") -> intel12gen
+                search.contains("-11") || search.contains("11th gen") || search.contains("11a gen") -> intel11gen
+                search.contains("-10") || search.contains("10th gen") || search.contains("10a gen") -> intel10gen
+                else -> null
+            }
         }
+
+
+        if (nameOnly.contains("ryzen")) {
+            val modelNumber = Regex("""\d{4}""").find(nameOnly)?.value ?: ""
+            val firstDigit = modelNumber.firstOrNull()?.toString() ?: ""
+            
+            return when (firstDigit) {
+                "9" -> amd9000
+                "7" -> amd7000
+                "5" -> amd5000
+                "3" -> amd3000
+                "4" -> {
+                    // Serie 4000: 4100 y 4500 son Zen 2 (amd3000)
+                    if (modelNumber == "4100" || modelNumber == "4500") amd3000 else null
+                }
+                else -> null
+            }
+        }
+        
+        return null
     }
 
     private fun determineGpuImage(name: String): String? {

@@ -14,7 +14,7 @@ import edu.ucne.corebuild.data.local.entity.*
         CartEntity::class,
         StatsEntity::class
     ],
-    version = 152,
+    version = 153,
     exportSchema = false
 )
 abstract class CoreBuildDatabase : RoomDatabase() {

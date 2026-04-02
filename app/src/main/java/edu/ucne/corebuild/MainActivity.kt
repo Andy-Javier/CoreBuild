@@ -52,7 +52,10 @@ import edu.ucne.corebuild.presentation.home.HomeScreen
 import edu.ucne.corebuild.presentation.navigation.Screen
 import edu.ucne.corebuild.presentation.orders.OrderDetailScreen
 import edu.ucne.corebuild.presentation.orders.OrdersScreen
+import edu.ucne.corebuild.presentation.performance.PerformanceScreen
 import edu.ucne.corebuild.presentation.recommendation.RecommendationScreen
+import edu.ucne.corebuild.presentation.smartbuild.BuildSelectorScreen
+import edu.ucne.corebuild.presentation.smartbuild.SmartBuildScreen
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import edu.ucne.corebuild.ui.theme.ThemeMode
 import edu.ucne.corebuild.ui.theme.ThemeSettings
@@ -105,7 +108,7 @@ fun CoreBuildAppContent(
             ModalDrawerSheet(
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
                 drawerTonalElevation = 4.dp,
-                modifier = Modifier.width(280.dp) // Drawer más pequeño (Material 3 default es 360dp)
+                modifier = Modifier.width(280.dp)
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
@@ -231,12 +234,21 @@ fun CoreBuildAppContent(
                     }
                 )
                 DrawerItem(
-                    icon = Icons.Default.AutoAwesome,
-                    label = "Recomendador IA",
-                    selected = currentRoute?.contains("Recommendation") == true,
+                    icon = Icons.Default.VideogameAsset,
+                    label = "Simulador FPS",
+                    selected = currentRoute?.contains("Performance") == true,
                     onClick = {
                         scope.launch { drawerState.close() }
-                        navController.navigate(Screen.Recommendation)
+                        navController.navigate(Screen.Performance)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.AutoAwesome,
+                    label = "Recomendador IA",
+                    selected = currentRoute?.contains("BuildSelector") == true || currentRoute?.contains("Recommendation") == true || currentRoute?.contains("SmartBuild") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.BuildSelector)
                     }
                 )
                 
@@ -372,10 +384,26 @@ fun CoreBuildAppContent(
             composable<Screen.Bottleneck> {
                 BottleneckScreen(onMenuClick = { scope.launch { drawerState.open() } })
             }
+            composable<Screen.Performance> {
+                PerformanceScreen(onMenuClick = { scope.launch { drawerState.open() } })
+            }
+            composable<Screen.BuildSelector> {
+                BuildSelectorScreen(
+                    onRecommendationClick = { navController.navigate(Screen.Recommendation) },
+                    onSmartBuildClick = { navController.navigate(Screen.SmartBuild) }
+                )
+            }
             composable<Screen.Recommendation> {
                 RecommendationScreen(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onComponentClick = { id -> navController.navigate(Screen.Detail(id)) }
+                )
+            }
+            composable<Screen.SmartBuild> {
+                SmartBuildScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onComponentClick = { id -> navController.navigate(Screen.Detail(id)) },
+                    onCartClick = { navController.navigate(Screen.Cart) }
                 )
             }
         }
