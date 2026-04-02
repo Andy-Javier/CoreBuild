@@ -52,6 +52,7 @@ import edu.ucne.corebuild.presentation.home.HomeScreen
 import edu.ucne.corebuild.presentation.navigation.Screen
 import edu.ucne.corebuild.presentation.orders.OrderDetailScreen
 import edu.ucne.corebuild.presentation.orders.OrdersScreen
+import edu.ucne.corebuild.presentation.performance.PerformanceScreen
 import edu.ucne.corebuild.presentation.recommendation.RecommendationScreen
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import edu.ucne.corebuild.ui.theme.ThemeMode
@@ -105,7 +106,7 @@ fun CoreBuildAppContent(
             ModalDrawerSheet(
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
                 drawerTonalElevation = 4.dp,
-                modifier = Modifier.width(280.dp) // Drawer más pequeño (Material 3 default es 360dp)
+                modifier = Modifier.width(280.dp)
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
@@ -228,6 +229,15 @@ fun CoreBuildAppContent(
                     onClick = {
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Bottleneck)
+                    }
+                )
+                DrawerItem(
+                    icon = Icons.Default.VideogameAsset,
+                    label = "Simulador FPS",
+                    selected = currentRoute?.contains("Performance") == true,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Performance)
                     }
                 )
                 DrawerItem(
@@ -371,6 +381,9 @@ fun CoreBuildAppContent(
             }
             composable<Screen.Bottleneck> {
                 BottleneckScreen(onMenuClick = { scope.launch { drawerState.open() } })
+            }
+            composable<Screen.Performance> {
+                PerformanceScreen(onMenuClick = { scope.launch { drawerState.open() } })
             }
             composable<Screen.Recommendation> {
                 RecommendationScreen(
