@@ -31,7 +31,13 @@ sealed class Screen {
     data class OrderDetail(val orderId: Int) : Screen()
 
     @Serializable
+    data object BuildSelector : Screen()
+
+    @Serializable
     data object Recommendation : Screen()
+
+    @Serializable
+    data object SmartBuild : Screen()
 
     @Serializable
     data object Login : Screen()
