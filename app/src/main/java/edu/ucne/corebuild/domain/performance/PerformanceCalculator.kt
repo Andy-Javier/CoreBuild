@@ -7,16 +7,16 @@ enum class GamePreset(
     val fpsAt100pct: Int,   // FPS máximo con el mejor hardware @ 1080p
     val fpsFloor: Int       // FPS mínimo absoluto con hardware muy débil
 ) {
-    GTA_V(            "GTA V",                  fpsAt100pct = 165, fpsFloor = 18),
-    CYBERPUNK_2077(   "Cyberpunk 2077",          fpsAt100pct = 120, fpsFloor = 8),
-    VALORANT(         "Valorant",                fpsAt100pct = 300, fpsFloor = 40),
-    MINECRAFT(        "Minecraft",               fpsAt100pct = 240, fpsFloor = 30),
-    ELDEN_RING(       "Elden Ring",              fpsAt100pct = 60,  fpsFloor = 10),
-    CS2(              "CS2",                     fpsAt100pct = 300, fpsFloor = 45),
-    FORTNITE(         "Fortnite",                fpsAt100pct = 144, fpsFloor = 20),
-    RED_DEAD_2(       "Red Dead 2",              fpsAt100pct = 90,  fpsFloor = 10),
-    HOGWARTS_LEGACY(  "Hogwarts Legacy",         fpsAt100pct = 100, fpsFloor = 8),
-    STARFIELD(        "Starfield",               fpsAt100pct = 90,  fpsFloor = 10)
+    GTA_V(            "GTA V",                  fpsAt100pct = 300, fpsFloor = 18),
+    CYBERPUNK_2077(   "Cyberpunk 2077",          fpsAt100pct = 200, fpsFloor = 8),
+    VALORANT(         "Valorant",                fpsAt100pct = 500, fpsFloor = 40),
+    MINECRAFT(        "Minecraft",               fpsAt100pct = 1400, fpsFloor = 30),
+    ELDEN_RING(       "Elden Ring",              fpsAt100pct = 130,  fpsFloor = 10),
+    CS2(              "CS2",                     fpsAt100pct = 450, fpsFloor = 45),
+    FORTNITE(         "Fortnite",                fpsAt100pct = 345, fpsFloor = 20),
+    RED_DEAD_2(       "Red Dead 2",              fpsAt100pct = 140,  fpsFloor = 10),
+    HOGWARTS_LEGACY(  "Hogwarts Legacy",         fpsAt100pct = 133, fpsFloor = 8),
+    STARFIELD(        "Starfield",               fpsAt100pct = 110,  fpsFloor = 10)
 }
 
 data class FpsResult(
