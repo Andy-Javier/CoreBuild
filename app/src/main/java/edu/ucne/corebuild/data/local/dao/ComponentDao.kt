@@ -12,6 +12,9 @@ interface ComponentDao {
     @Query("SELECT * FROM components")
     fun getComponents(): Flow<List<ComponentEntity>>
 
+    @Query("SELECT * FROM components")
+    suspend fun getAllSync(): List<ComponentEntity>
+
     @Query("SELECT * FROM components WHERE id = :id")
     fun getComponentById(id: Int): Flow<ComponentEntity?>
 

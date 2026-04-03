@@ -26,6 +26,7 @@ fun RamDto.toDomain(idOverride: Int? = null): Component.RAM {
         speed = velocidad ?: "",
         latency = latencia ?: "",
         voltage = voltaje,
+        hasRGB = nombre?.contains("RGB", ignoreCase = true) == true,
         price = precioUsd ?: 0.0,
         description = descripcion ?: "",
         imageUrl = imageUrl

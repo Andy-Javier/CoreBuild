@@ -11,6 +11,9 @@ data class MotherboardDto(
     val formato: String? = null,
     val tipoRam: String? = null,
     val velocidadRamMax: String? = null,
+    val slotsRam: Int? = null,
+    val capacidadRamMax: String? = null,
+    val almacenamiento: String? = null, // Can contain M.2 info
     val precioUsd: Double? = null,
     val descripcion: String? = null,
     val imageUrl: String? = null
@@ -25,7 +28,10 @@ fun MotherboardDto.toDomain(idOverride: Int? = null): Component.Motherboard {
         chipset = chipset ?: "",
         format = formato ?: "",
         ramType = tipoRam ?: "",
-        maxRamCapacity = velocidadRamMax,
+        maxRamSpeed = velocidadRamMax,
+        ramSlots = slotsRam,
+        maxRamCapacity = capacidadRamMax,
+        slotsM2 = if (almacenamiento?.contains("M.2", ignoreCase = true) == true) 1 else 0,
         price = precioUsd ?: 0.0,
         description = descripcion ?: "",
         imageUrl = imageUrl

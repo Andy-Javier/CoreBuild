@@ -25,12 +25,16 @@ data class ComponentEntity(
     val tdp: String? = null,
     val cache: String? = null,
     val integratedGraphics: String? = null,
+    val ramSupport: String? = null,
     
     // GPU fields
     val chipset: String? = null,
     val vram: String? = null,
     val vramType: String? = null,
-    val recommendedWattage: String? = null,
+    val memoryBus: String? = null,
+    val gpuBaseClock: String? = null,
+    val gpuBoostClock: String? = null,
+    val consumptionWatts: String? = null,
     val recommendedPSU: String? = null,
     val pcieInterface: String? = null,
     val length: String? = null,
@@ -38,6 +42,8 @@ data class ComponentEntity(
     // Motherboard fields
     val format: String? = null,
     val motherboardRamType: String? = null,
+    val maxRamSpeed: String? = null,
+    val ramSlots: Int? = null,
     val maxRamCapacity: String? = null,
     val slotsM2: Int? = null,
     
