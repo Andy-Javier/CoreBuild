@@ -2,15 +2,13 @@ package edu.ucne.corebuild.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 
@@ -31,7 +29,6 @@ fun AnimatedListItem(
     }
 }
 
-@Composable
 fun Modifier.bounceClick() = composed {
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
