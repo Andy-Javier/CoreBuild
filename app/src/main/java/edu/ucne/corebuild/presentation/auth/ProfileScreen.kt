@@ -20,18 +20,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onLogoutSuccess: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isLogged, uiState.isCheckingSession) {
         if (!uiState.isCheckingSession && !uiState.isLogged) {
@@ -39,7 +39,7 @@ fun ProfileScreen(
         }
     }
 
-    ProfileScreenContent(
+    ProfileBody(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onBackClick = onBackClick
@@ -48,7 +48,7 @@ fun ProfileScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreenContent(
+fun ProfileBody(
     uiState: AuthUiState,
     onEvent: (AuthEvent) -> Unit,
     onBackClick: () -> Unit
@@ -236,7 +236,7 @@ fun ProfileScreenContent(
 @Composable
 fun ProfileScreenPreview() {
     CoreBuildTheme {
-        ProfileScreenContent(
+        ProfileBody(
             uiState = AuthUiState(),
             onEvent = {},
             onBackClick = {}
