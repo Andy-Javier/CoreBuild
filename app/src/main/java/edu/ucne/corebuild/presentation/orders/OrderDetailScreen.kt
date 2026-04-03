@@ -15,10 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -35,6 +37,18 @@ fun OrderDetailScreen(
         viewModel.onEvent(OrderDetailEvent.LoadOrder(orderId))
     }
 
+    OrderDetailScreenContent(
+        state = state,
+        onBackClick = onBackClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrderDetailScreenContent(
+    state: OrderDetailUiState,
+    onBackClick: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -221,5 +235,16 @@ fun OrderItemRow(component: Component, quantity: Int) {
                 fontWeight = FontWeight.ExtraBold
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OrderDetailScreenPreview() {
+    CoreBuildTheme {
+        OrderDetailScreenContent(
+            state = OrderDetailUiState(),
+            onBackClick = {}
+        )
     }
 }

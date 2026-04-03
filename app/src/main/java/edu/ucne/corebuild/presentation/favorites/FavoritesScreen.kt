@@ -13,11 +13,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
 import edu.ucne.corebuild.presentation.home.ComponentItem
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +30,20 @@ fun FavoritesScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    FavoritesScreenContent(
+        state = state,
+        onComponentClick = onComponentClick,
+        onMenuClick = onMenuClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FavoritesScreenContent(
+    state: FavoritesUiState,
+    onComponentClick: (Int) -> Unit,
+    onMenuClick: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,5 +103,17 @@ fun FavoritesScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FavoritesScreenPreview() {
+    CoreBuildTheme {
+        FavoritesScreenContent(
+            state = FavoritesUiState(),
+            onComponentClick = {},
+            onMenuClick = {}
+        )
     }
 }

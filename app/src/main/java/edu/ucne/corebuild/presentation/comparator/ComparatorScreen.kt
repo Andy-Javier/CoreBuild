@@ -17,14 +17,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.PerformanceBar
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +38,20 @@ fun ComparatorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    ComparatorScreenContent(
+        uiState = uiState,
+        onMenuClick = onMenuClick,
+        onEvent = viewModel::onEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ComparatorScreenContent(
+    uiState: ComparatorUiState,
+    onMenuClick: () -> Unit,
+    onEvent: (ComparatorEvent) -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -56,34 +74,61 @@ fun ComparatorScreen(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 SegmentedButton(
                     selected = uiState.selectedType == "CPU",
-                    onClick = { viewModel.onEvent(ComparatorEvent.SelectType("CPU")) },
+                    onClick = { onEvent(ComparatorEvent.SelectType("CPU")) },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                 ) { Text("Procesadores") }
                 SegmentedButton(
                     selected = uiState.selectedType == "GPU",
-                    onClick = { viewModel.onEvent(ComparatorEvent.SelectType("GPU")) },
+                    onClick = { onEvent(ComparatorEvent.SelectType("GPU")) },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                 ) { Text("Gráficas") }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Selectores de componentes
+            // Selectores de componentes con miniaturas
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ComponentSelector(
-                    label = "Componente 1",
-                    selected = uiState.selectedComponent1,
-                    options = uiState.filteredComponents,
-                    onSelect = { viewModel.onEvent(ComparatorEvent.SelectComponent1(it)) },
-                    modifier = Modifier.weight(1f)
-                )
-                ComponentSelector(
-                    label = "Componente 2",
-                    selected = uiState.selectedComponent2,
-                    options = uiState.filteredComponents,
-                    onSelect = { viewModel.onEvent(ComparatorEvent.SelectComponent2(it)) },
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (uiState.selectedComponent1 != null) {
+                        AsyncImage(
+                            model = uiState.selectedComponent1.imageUrl ?: "https://via.placeholder.com/100",
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Fit
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    ComponentSelector(
+                        label = "Componente 1",
+                        selected = uiState.selectedComponent1,
+                        options = uiState.filteredComponents,
+                        onSelect = { onEvent(ComparatorEvent.SelectComponent1(it)) }
+                    )
+                }
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    if (uiState.selectedComponent2 != null) {
+                        AsyncImage(
+                            model = uiState.selectedComponent2.imageUrl ?: "https://via.placeholder.com/100",
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Fit
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    ComponentSelector(
+                        label = "Componente 2",
+                        selected = uiState.selectedComponent2,
+                        options = uiState.filteredComponents,
+                        onSelect = { onEvent(ComparatorEvent.SelectComponent2(it)) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -300,3 +345,15 @@ private fun gpuPerformanceScore(gpu: Component.GPU): Double {
 }
 
 data class Metric(val label: String, val v1: Double, val v2: Double, val t1: String, val t2: String, val inverse: Boolean = false)
+
+@Preview(showBackground = true)
+@Composable
+fun ComparatorScreenPreview() {
+    CoreBuildTheme {
+        ComparatorScreenContent(
+            uiState = ComparatorUiState(),
+            onMenuClick = {},
+            onEvent = {}
+        )
+    }
+}

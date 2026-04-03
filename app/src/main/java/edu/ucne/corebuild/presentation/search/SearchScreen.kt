@@ -15,9 +15,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +29,23 @@ fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    SearchScreenContent(
+        uiState = uiState,
+        onBackClick = onBackClick,
+        onComponentClick = onComponentClick,
+        onEvent = viewModel::onEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchScreenContent(
+    uiState: SearchUiState,
+    onBackClick: () -> Unit,
+    onComponentClick: (Int) -> Unit,
+    onEvent: (SearchEvent) -> Unit
+) {
     var showFilters by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -36,7 +55,7 @@ fun SearchScreen(
                     title = {
                         TextField(
                             value = uiState.query,
-                            onValueChange = { viewModel.onEvent(SearchEvent.OnQueryChange(it)) },
+                            onValueChange = { onEvent(SearchEvent.OnQueryChange(it)) },
                             placeholder = { Text("Buscar componentes...") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
@@ -49,7 +68,7 @@ fun SearchScreen(
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             trailingIcon = {
                                 if (uiState.query.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.onEvent(SearchEvent.OnQueryChange("")) }) {
+                                    IconButton(onClick = { onEvent(SearchEvent.OnQueryChange("")) }) {
                                         Icon(Icons.Default.Clear, contentDescription = "Limpiar")
                                     }
                                 }
@@ -74,7 +93,7 @@ fun SearchScreen(
                 )
                 
                 if (showFilters) {
-                    FilterSection(uiState, viewModel)
+                    FilterSection(uiState, onEvent)
                 }
             }
         }
@@ -109,7 +128,7 @@ fun SearchScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterSection(uiState: SearchUiState, viewModel: SearchViewModel) {
+fun FilterSection(uiState: SearchUiState, onEvent: (SearchEvent) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
         modifier = Modifier.fillMaxWidth()
@@ -120,7 +139,7 @@ fun FilterSection(uiState: SearchUiState, viewModel: SearchViewModel) {
                 items(uiState.availableCategories) { category ->
                     FilterChip(
                         selected = uiState.selectedCategories.contains(category),
-                        onClick = { viewModel.onEvent(SearchEvent.OnCategorySelect(category)) },
+                        onClick = { onEvent(SearchEvent.OnCategorySelect(category)) },
                         label = { Text(category) }
                     )
                 }
@@ -133,14 +152,14 @@ fun FilterSection(uiState: SearchUiState, viewModel: SearchViewModel) {
                 items(uiState.availableBrands) { brand ->
                     FilterChip(
                         selected = uiState.selectedBrands.contains(brand),
-                        onClick = { viewModel.onEvent(SearchEvent.OnBrandSelect(brand)) },
+                        onClick = { onEvent(SearchEvent.OnBrandSelect(brand)) },
                         label = { Text(brand) }
                     )
                 }
             }
             
             TextButton(
-                onClick = { viewModel.onEvent(SearchEvent.OnClearFilters) },
+                onClick = { onEvent(SearchEvent.OnClearFilters) },
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Limpiar filtros")
@@ -187,5 +206,18 @@ fun ComponentSearchItem(component: Component, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchScreenPreview() {
+    CoreBuildTheme {
+        SearchScreenContent(
+            uiState = SearchUiState(),
+            onBackClick = {},
+            onComponentClick = {},
+            onEvent = {}
+        )
     }
 }

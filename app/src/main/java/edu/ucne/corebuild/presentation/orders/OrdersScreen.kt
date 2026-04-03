@@ -16,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.model.OrderMode
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,6 +34,20 @@ fun OrdersScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    OrdersScreenContent(
+        state = state,
+        onOrderClick = onOrderClick,
+        onMenuClick = onMenuClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrdersScreenContent(
+    state: OrdersUiState,
+    onOrderClick: (Int) -> Unit,
+    onMenuClick: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -168,5 +184,17 @@ fun OrderCard(order: Order, onClick: () -> Unit) {
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OrdersScreenPreview() {
+    CoreBuildTheme {
+        OrdersScreenContent(
+            state = OrdersUiState(),
+            onOrderClick = {},
+            onMenuClick = {}
+        )
     }
 }

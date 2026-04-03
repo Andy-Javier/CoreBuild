@@ -9,10 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.PerformanceBar
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +24,20 @@ fun BottleneckScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    BottleneckScreenContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onMenuClick = onMenuClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BottleneckScreenContent(
+    state: BottleneckUiState,
+    onEvent: (BottleneckEvent) -> Unit,
+    onMenuClick: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -51,7 +67,7 @@ fun BottleneckScreen(
                 label = "Procesador (CPU)",
                 selectedComponent = state.selectedCpu,
                 components = state.cpus,
-                onSelect = { viewModel.onEvent(BottleneckEvent.SelectCpu(it as Component.CPU)) }
+                onSelect = { onEvent(BottleneckEvent.SelectCpu(it as Component.CPU)) }
             )
 
             // GPU Selector
@@ -59,13 +75,13 @@ fun BottleneckScreen(
                 label = "Tarjeta Gráfica (GPU)",
                 selectedComponent = state.selectedGpu,
                 components = state.gpus,
-                onSelect = { viewModel.onEvent(BottleneckEvent.SelectGpu(it as Component.GPU)) }
+                onSelect = { onEvent(BottleneckEvent.SelectGpu(it as Component.GPU)) }
             )
 
             // Resolution Selector
             ResolutionSelector(
                 selectedResolution = state.selectedResolution,
-                onResolutionSelect = { viewModel.onEvent(BottleneckEvent.SelectResolution(it)) }
+                onResolutionSelect = { onEvent(BottleneckEvent.SelectResolution(it)) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -180,5 +196,17 @@ fun ResultCard(percentage: Double, status: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BottleneckScreenPreview() {
+    CoreBuildTheme {
+        BottleneckScreenContent(
+            state = BottleneckUiState(),
+            onEvent = {},
+            onMenuClick = {}
+        )
     }
 }

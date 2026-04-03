@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,15 +27,30 @@ fun LoginScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLogged) {
         if (uiState.isLogged) {
             onLoginSuccess()
         }
     }
+
+    LoginScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        onRegisterClick = onRegisterClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginScreenContent(
+    uiState: AuthUiState,
+    onEvent: (AuthEvent) -> Unit,
+    onRegisterClick: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -89,7 +106,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.onEvent(AuthEvent.OnLogin(email, password)) },
+                onClick = { onEvent(AuthEvent.OnLogin(email, password)) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = email.isNotBlank() && password.isNotBlank() && !uiState.isLoading
             ) {
@@ -116,5 +133,17 @@ fun LoginScreen(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    CoreBuildTheme {
+        LoginScreenContent(
+            uiState = AuthUiState(),
+            onEvent = {},
+            onRegisterClick = {}
+        )
     }
 }

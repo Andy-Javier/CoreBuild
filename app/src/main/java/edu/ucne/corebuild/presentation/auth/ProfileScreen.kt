@@ -17,10 +17,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +32,27 @@ fun ProfileScreen(
     onLogoutSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.isLogged, uiState.isCheckingSession) {
+        if (!uiState.isCheckingSession && !uiState.isLogged) {
+            onLogoutSuccess()
+        }
+    }
+
+    ProfileScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        onBackClick = onBackClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreenContent(
+    uiState: AuthUiState,
+    onEvent: (AuthEvent) -> Unit,
+    onBackClick: () -> Unit
+) {
     var isSpentVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     
@@ -37,13 +60,7 @@ fun ProfileScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            viewModel.onEvent(AuthEvent.OnUpdateProfilePicture(it.toString()))
-        }
-    }
-
-    LaunchedEffect(uiState.isLogged, uiState.isCheckingSession) {
-        if (!uiState.isCheckingSession && !uiState.isLogged) {
-            onLogoutSuccess()
+            onEvent(AuthEvent.OnUpdateProfilePicture(it.toString()))
         }
     }
 
@@ -197,7 +214,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Button(
-                        onClick = { viewModel.onEvent(AuthEvent.OnLogout) },
+                        onClick = { onEvent(AuthEvent.OnLogout) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -215,15 +232,14 @@ fun ProfileScreen(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+fun ProfileScreenPreview() {
+    CoreBuildTheme {
+        ProfileScreenContent(
+            uiState = AuthUiState(),
+            onEvent = {},
+            onBackClick = {}
+        )
     }
 }

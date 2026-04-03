@@ -18,11 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.performance.GamePreset
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +34,20 @@ fun PerformanceScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    PerformanceScreenContent(
+        uiState = uiState,
+        onMenuClick = onMenuClick,
+        onEvent = viewModel::onEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PerformanceScreenContent(
+    uiState: PerformanceUiState,
+    onMenuClick: () -> Unit,
+    onEvent: (PerformanceEvent) -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -62,14 +78,14 @@ fun PerformanceScreen(
                     label = "CPU",
                     selected = uiState.selectedCpu,
                     options = uiState.cpus,
-                    onSelect = { viewModel.onEvent(PerformanceEvent.SelectCpu(it as Component.CPU)) },
+                    onSelect = { onEvent(PerformanceEvent.SelectCpu(it as Component.CPU)) },
                     modifier = Modifier.weight(1f)
                 )
                 ComponentSelector(
                     label = "GPU",
                     selected = uiState.selectedGpu,
                     options = uiState.gpus,
-                    onSelect = { viewModel.onEvent(PerformanceEvent.SelectGpu(it as Component.GPU)) },
+                    onSelect = { onEvent(PerformanceEvent.SelectGpu(it as Component.GPU)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -77,7 +93,7 @@ fun PerformanceScreen(
             // SECCIÓN 2 — Selector de juego
             GameSelector(
                 selectedGame = uiState.selectedGame,
-                onGameSelected = { viewModel.onEvent(PerformanceEvent.SelectGame(it)) }
+                onGameSelected = { onEvent(PerformanceEvent.SelectGame(it)) }
             )
 
             // SECCIÓN 3 — Selector de resolución
@@ -88,11 +104,12 @@ fun PerformanceScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    RESOLUTIONS.forEachIndexed { index, res ->
+                    val resolutions = listOf("1080p", "1440p", "4K")
+                    resolutions.forEachIndexed { index, res ->
                         SegmentedButton(
                             selected = uiState.selectedResolution == res,
-                            onClick = { viewModel.onEvent(PerformanceEvent.SelectResolution(res)) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = RESOLUTIONS.size)
+                            onClick = { onEvent(PerformanceEvent.SelectResolution(res)) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = resolutions.size)
                         ) {
                             Text(res)
                         }
@@ -296,5 +313,17 @@ fun ResultCard(result: edu.ucne.corebuild.domain.performance.FpsResult) {
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PerformanceScreenPreview() {
+    CoreBuildTheme {
+        PerformanceScreenContent(
+            uiState = PerformanceUiState(),
+            onMenuClick = {},
+            onEvent = {}
+        )
     }
 }

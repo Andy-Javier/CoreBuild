@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -33,6 +34,7 @@ import edu.ucne.corebuild.domain.smartbuilder.SmartBuild
 import edu.ucne.corebuild.presentation.components.AnimatedFilterChip
 import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,24 @@ fun SmartBuildScreen(
         }
     }
 
+    SmartBuildScreenContent(
+        formState = formState,
+        uiState = uiState,
+        onBackClick = onBackClick,
+        onComponentClick = onComponentClick,
+        viewModel = viewModel
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SmartBuildScreenContent(
+    formState: SmartBuildFormState,
+    uiState: SmartBuildUiState,
+    onBackClick: () -> Unit,
+    onComponentClick: (Int) -> Unit,
+    viewModel: SmartBuildViewModel? = null
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -94,11 +114,11 @@ fun SmartBuildScreen(
                         SmartBuildForm(
                             formState = formState,
                             viewModel = viewModel,
-                            onToggleCpu = viewModel::toggleCpuMode,
-                            onToggleGpu = viewModel::toggleGpuMode,
-                            onSelectCpu = viewModel::selectCpu,
-                            onSelectGpu = viewModel::selectGpu,
-                            onBuildClick = viewModel::buildNow
+                            onToggleCpu = { viewModel?.toggleCpuMode() },
+                            onToggleGpu = { viewModel?.toggleGpuMode() },
+                            onSelectCpu = { viewModel?.selectCpu(it) },
+                            onSelectGpu = { viewModel?.selectGpu(it) },
+                            onBuildClick = { viewModel?.buildNow() }
                         )
                     }
                     is SmartBuildUiState.Loading -> {
@@ -109,8 +129,8 @@ fun SmartBuildScreen(
                     is SmartBuildUiState.Success -> {
                         SmartBuildResult(
                             build = state.build,
-                            onReset = viewModel::resetToForm,
-                            onSaveBuild = viewModel::requestSaveBuild,
+                            onReset = { viewModel?.resetToForm() },
+                            onSaveBuild = { viewModel?.requestSaveBuild() },
                             onComponentClick = onComponentClick
                         )
                     }
@@ -132,17 +152,17 @@ fun SmartBuildScreen(
 @Composable
 fun SmartBuildForm(
     formState: SmartBuildFormState,
-    viewModel: SmartBuildViewModel,
+    viewModel: SmartBuildViewModel?,
     onToggleCpu: () -> Unit,
     onToggleGpu: () -> Unit,
     onSelectCpu: (Component.CPU) -> Unit,
     onSelectGpu: (Component.GPU) -> Unit,
     onBuildClick: () -> Unit
 ) {
-    val cpuSearchQuery by viewModel.cpuSearchQuery.collectAsState()
-    val gpuSearchQuery by viewModel.gpuSearchQuery.collectAsState()
-    val cpuGroups by viewModel.filteredCpuGroups.collectAsState()
-    val gpuGroups by viewModel.filteredGpuGroups.collectAsState()
+    val cpuSearchQuery = viewModel?.cpuSearchQuery?.collectAsState()?.value ?: ""
+    val gpuSearchQuery = viewModel?.gpuSearchQuery?.collectAsState()?.value ?: ""
+    val cpuGroups = viewModel?.filteredCpuGroups?.collectAsState()?.value ?: emptyList()
+    val gpuGroups = viewModel?.filteredGpuGroups?.collectAsState()?.value ?: emptyList()
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -184,7 +204,7 @@ fun SmartBuildForm(
                     SectionSearchHeader(
                         title = "Selecciona un Procesador",
                         searchQuery = cpuSearchQuery,
-                        onSearchChange = viewModel::onCpuSearch,
+                        onSearchChange = { viewModel?.onCpuSearch(it) },
                         placeholder = "Buscar CPU..."
                     )
                 }
@@ -223,7 +243,7 @@ fun SmartBuildForm(
                     SectionSearchHeader(
                         title = "Selecciona una Tarjeta Gráfica",
                         searchQuery = gpuSearchQuery,
-                        onSearchChange = viewModel::onGpuSearch,
+                        onSearchChange = { viewModel?.onGpuSearch(it) },
                         placeholder = "Buscar GPU...",
                         topPadding = if (formState.cpuModeEnabled) 8.dp else 0.dp
                     )
@@ -701,4 +721,17 @@ fun SaveBuildDialog(
             }
         }
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SmartBuildScreenPreview() {
+    CoreBuildTheme {
+        SmartBuildScreenContent(
+            formState = SmartBuildFormState(),
+            uiState = SmartBuildUiState.Idle,
+            onBackClick = {},
+            onComponentClick = {}
+        )
+    }
 }
