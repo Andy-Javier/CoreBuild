@@ -18,12 +18,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.presentation.overview.BuildOverviewViewModel
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +57,26 @@ fun CartScreen(
         }
     }
 
+    CartScreenContent(
+        state = state,
+        overviewState = overviewState,
+        snackbarHostState = snackbarHostState,
+        onBackClick = onBackClick,
+        onMenuClick = onMenuClick,
+        onEvent = viewModel::onEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CartScreenContent(
+    state: CartUiState,
+    overviewState: edu.ucne.corebuild.presentation.overview.BuildOverviewUiState,
+    snackbarHostState: SnackbarHostState,
+    onBackClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onEvent: (CartEvent) -> Unit
+) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -81,7 +103,6 @@ fun CartScreen(
             if (state.showOrderConfirmation) {
                 OrderConfirmationOverlay()
             } else if (state.cartItems.isEmpty()) {
-                // Carrito vacío inline
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -126,16 +147,16 @@ fun CartScreen(
                         items(state.cartItems, key = { it.component.id }) { item ->
                             CartItemRow(
                                 item = item,
-                                onUpdateQuantity = { id, qty -> viewModel.onEvent(CartEvent.UpdateQuantity(id, qty)) },
-                                onRemove = { id -> viewModel.onEvent(CartEvent.RemoveFromCart(id)) }
+                                onUpdateQuantity = { id, qty -> onEvent(CartEvent.UpdateQuantity(id, qty)) },
+                                onRemove = { id -> onEvent(CartEvent.RemoveFromCart(id)) }
                             )
                         }
                     }
 
                     CartSummary(
                         state = state,
-                        onClearCart = { viewModel.onEvent(CartEvent.ClearCart) },
-                        onCheckout = { viewModel.onEvent(CartEvent.OnCheckout) }
+                        onClearCart = { onEvent(CartEvent.ClearCart) },
+                        onCheckout = { onEvent(CartEvent.OnCheckout) }
                     )
                 }
             }
@@ -513,5 +534,20 @@ fun CartSummary(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CartScreenPreview() {
+    CoreBuildTheme {
+        CartScreenContent(
+            state = CartUiState(),
+            overviewState = edu.ucne.corebuild.presentation.overview.BuildOverviewUiState(),
+            snackbarHostState = SnackbarHostState(),
+            onBackClick = {},
+            onMenuClick = {},
+            onEvent = {}
+        )
     }
 }

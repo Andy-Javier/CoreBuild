@@ -2,11 +2,7 @@ package edu.ucne.corebuild.presentation.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,8 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,16 +24,31 @@ fun RegisterScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLogged) {
         if (uiState.isLogged) {
             onRegisterSuccess()
         }
     }
+
+    RegisterScreenContent(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        onLoginClick = onLoginClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegisterScreenContent(
+    uiState: AuthUiState,
+    onEvent: (AuthEvent) -> Unit,
+    onLoginClick: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -102,7 +115,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.onEvent(AuthEvent.OnRegister(name, email, password)) },
+                onClick = { onEvent(AuthEvent.OnRegister(name, email, password)) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !uiState.isLoading
             ) {
@@ -129,5 +142,17 @@ fun RegisterScreen(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RegisterScreenPreview() {
+    CoreBuildTheme {
+        RegisterScreenContent(
+            uiState = AuthUiState(),
+            onEvent = {},
+            onLoginClick = {}
+        )
     }
 }

@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.presentation.components.PerformanceBar
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +32,20 @@ fun BuildOverviewScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    BuildOverviewScreenContent(
+        uiState = uiState,
+        onBackClick = onBackClick,
+        onGoToHome = onGoToHome
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BuildOverviewScreenContent(
+    uiState: BuildOverviewUiState,
+    onBackClick: () -> Unit,
+    onGoToHome: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -231,5 +247,17 @@ fun ComponentSummaryItem(item: CartItem) {
             Text(item.component.name, maxLines = 1, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
             Text("$${String.format("%.2f", item.component.price)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BuildOverviewScreenPreview() {
+    CoreBuildTheme {
+        BuildOverviewScreenContent(
+            uiState = BuildOverviewUiState(),
+            onBackClick = {},
+            onGoToHome = {}
+        )
     }
 }

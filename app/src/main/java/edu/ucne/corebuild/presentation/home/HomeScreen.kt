@@ -25,12 +25,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -556,5 +558,19 @@ fun ComponentItem(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    CoreBuildTheme {
+        HomeScreenContent(
+            state = HomeUiState(),
+            onEvent = {},
+            onComponentClick = {},
+            onCartClick = {},
+            onMenuClick = {}
+        )
     }
 }

@@ -18,11 +18,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -243,7 +245,6 @@ fun ProductDetailContent(
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(component.imageUrl ?: "https://via.placeholder.com/500")
-                                    .addHeader("User-Agent", "Mozilla/5.0")
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = component.name,
@@ -434,4 +435,20 @@ fun DetailRow(label: String, value: String) {
         Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProductDetailScreenPreview() {
+    CoreBuildTheme {
+        ProductDetailContent(
+            state = ProductDetailUiState(),
+            onBackClick = {},
+            onCartClick = {},
+            onAddToCart = { _, _ -> },
+            onBuyNow = { _, _ -> },
+            onToggleFavorite = {},
+            onDismissSnackbar = {}
+        )
+    }
 }

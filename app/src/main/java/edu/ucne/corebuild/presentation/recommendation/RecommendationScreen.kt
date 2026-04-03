@@ -16,10 +16,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +32,22 @@ fun RecommendationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    RecommendationScreenContent(
+        uiState = uiState,
+        onMenuClick = onMenuClick,
+        onComponentClick = onComponentClick,
+        onEvent = viewModel::onEvent
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecommendationScreenContent(
+    uiState: RecommendationUiState,
+    onMenuClick: () -> Unit,
+    onComponentClick: (Int) -> Unit,
+    onEvent: (RecommendationEvent) -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -51,7 +69,7 @@ fun RecommendationScreen(
             // Inputs: Budget
             OutlinedTextField(
                 value = uiState.budget,
-                onValueChange = { viewModel.onEvent(RecommendationEvent.OnBudgetChange(it)) },
+                onValueChange = { onEvent(RecommendationEvent.OnBudgetChange(it)) },
                 label = { Text("Presupuesto Máximo (USD)") },
                 placeholder = { Text("Ej: 1000") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -76,7 +94,7 @@ fun RecommendationScreen(
                 FilterChip(
                     selected = uiState.priority == "GPU",
                     onClick = { 
-                        viewModel.onEvent(RecommendationEvent.OnPriorityChange(if (uiState.priority == "GPU") null else "GPU"))
+                        onEvent(RecommendationEvent.OnPriorityChange(if (uiState.priority == "GPU") null else "GPU"))
                     },
                     label = { 
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -93,7 +111,7 @@ fun RecommendationScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.onEvent(RecommendationEvent.OnGenerateBuild) },
+                onClick = { onEvent(RecommendationEvent.OnGenerateBuild) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = uiState.budget.isNotEmpty() && !uiState.isLoading,
                 shape = MaterialTheme.shapes.large
@@ -231,5 +249,18 @@ fun RecommendedItem(component: Component, onClick: (Int) -> Unit) {
             }
             Text("$${String.format("%.0f", component.price)}", fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RecommendationScreenPreview() {
+    CoreBuildTheme {
+        RecommendationScreenContent(
+            uiState = RecommendationUiState(),
+            onMenuClick = {},
+            onComponentClick = {},
+            onEvent = {}
+        )
     }
 }
