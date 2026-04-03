@@ -4,14 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.recommendation.BuildRecommender
-import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class RecommendationViewModel @Inject constructor(
-    private val componentRepository: ComponentRepository,
+    private val getComponentsUseCase: GetComponentsUseCase,
     private val buildRecommender: BuildRecommender
 ) : ViewModel() {
 
@@ -24,7 +24,7 @@ class RecommendationViewModel @Inject constructor(
 
     private fun loadComponents() {
         viewModelScope.launch {
-            componentRepository.getComponents().collect { components ->
+            getComponentsUseCase().collect { components ->
                 _uiState.update { it.copy(allComponents = components) }
             }
         }
