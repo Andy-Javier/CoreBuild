@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
+import edu.ucne.corebuild.presentation.components.PerformanceBar
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,8 +207,8 @@ fun BuildScoreSection(state: CartUiState) {
                 
                 val scoreColor = when(state.buildLabel) {
                     "Excelente" -> Color(0xFF4CAF50)
-                    "Balanceado" -> Color(0xFF2196F3)
-                    else -> MaterialTheme.colorScheme.error
+                    "Balanceado" -> Color(0xFFFFB300)
+                    else -> Color(0xFFF44336)
                 }
                 
                 Surface(
@@ -227,15 +228,9 @@ fun BuildScoreSection(state: CartUiState) {
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            LinearProgressIndicator(
-                progress = { state.buildScore / 100f },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
-                color = when(state.buildLabel) {
-                    "Excelente" -> Color(0xFF4CAF50)
-                    "Balanceado" -> Color(0xFF2196F3)
-                    else -> MaterialTheme.colorScheme.error
-                },
-                trackColor = MaterialTheme.colorScheme.outlineVariant
+            PerformanceBar(
+                value = state.buildScore / 100f,
+                modifier = Modifier.fillMaxWidth()
             )
             
             if (state.buildRecommendations.isNotEmpty()) {
