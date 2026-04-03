@@ -31,9 +31,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import edu.ucne.corebuild.domain.model.Component
-import edu.ucne.corebuild.presentation.components.AnimatedFilterChip
-import edu.ucne.corebuild.presentation.components.AnimatedListItem
-import edu.ucne.corebuild.presentation.components.bounceClick
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -85,25 +82,16 @@ fun HomeScreenContent(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
-                    Text(
-                        "CoreBuild",
-                        fontWeight = FontWeight.Bold
-                    ) 
+                title = {
+                    Text("CoreBuild", fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onMenuClick,
-                        modifier = Modifier.bounceClick()
-                    ) {
+                    IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onCartClick,
-                        modifier = Modifier.bounceClick()
-                    ) {
+                    IconButton(onClick = onCartClick) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
                     }
                 },
@@ -134,19 +122,20 @@ fun HomeScreenContent(
             if (state.selectedCategory == null && state.searchQuery.isBlank()) {
                 state.featuredBuild?.let { build ->
                     item {
-                        AnimatedListItem {
-                            FeaturedBuildCard(
-                                build = build,
-                                onClick = { onEvent(HomeEvent.OnToggleBuildDialog) }
-                            )
-                        }
+                        FeaturedBuildCard(
+                            build = build,
+                            onClick = { onEvent(HomeEvent.OnToggleBuildDialog) }
+                        )
                     }
                 }
             }
 
             if (state.isLoading) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator()
                     }
                 }
@@ -193,30 +182,31 @@ fun HomeScreenContent(
 
                 if (state.filteredComponents.isEmpty()) {
                     item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text("No se encontraron productos", color = MaterialTheme.colorScheme.outline)
                         }
                     }
                 } else {
                     val chunks = state.filteredComponents.chunked(2)
                     items(chunks) { rowItems ->
-                        AnimatedListItem {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                rowItems.forEach { component ->
-                                    AmazonGridItem(
-                                        component = component,
-                                        onClick = onComponentClick,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                if (rowItems.size == 1) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowItems.forEach { component ->
+                                AmazonGridItem(
+                                    component = component,
+                                    onClick = onComponentClick,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
@@ -233,9 +223,7 @@ fun ComponentHorizontalRow(components: List<Component>, onComponentClick: (Int) 
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(components) { component ->
-            AnimatedListItem {
-                AmazonGridItem(component, onComponentClick)
-            }
+            AmazonGridItem(component, onComponentClick)
         }
     }
     Spacer(modifier = Modifier.height(24.dp))
@@ -251,7 +239,6 @@ fun FeaturedBuildCard(
             .fillMaxWidth()
             .height(220.dp)
             .padding(16.dp)
-            .bounceClick()
             .clickable { onClick() },
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -263,7 +250,6 @@ fun FeaturedBuildCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -273,7 +259,6 @@ fun FeaturedBuildCard(
                         )
                     )
             )
-            
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -322,7 +307,11 @@ fun FeaturedBuildDialog(
             Column {
                 Text(build.description, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Componentes incluidos:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Componentes incluidos:",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 build.components.forEach { component ->
                     Row(
@@ -358,18 +347,12 @@ fun FeaturedBuildDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onAddToCart,
-                modifier = Modifier.bounceClick()
-            ) {
+            Button(onClick = onAddToCart) {
                 Text("Añadir Todo al Carrito")
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.bounceClick()
-            ) {
+            TextButton(onClick = onDismiss) {
                 Text("Cerrar")
             }
         }
@@ -398,25 +381,25 @@ fun CategoryFilter(
     onCategorySelected: (String?) -> Unit
 ) {
     val categories = listOf("CPU", "GPU", "RAM", "Motherboard", "PSU")
-    
+
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            AnimatedFilterChip(
+            FilterChip(
                 selected = selectedCategory == null,
                 onClick = { onCategorySelected(null) },
                 label = { Text("Todos") },
-                modifier = Modifier.bounceClick()
+                shape = CircleShape
             )
         }
         items(categories) { category ->
-            AnimatedFilterChip(
+            FilterChip(
                 selected = selectedCategory == category,
                 onClick = { onCategorySelected(category) },
                 label = { Text(category) },
-                modifier = Modifier.bounceClick()
+                shape = CircleShape
             )
         }
     }
@@ -431,11 +414,12 @@ fun AmazonGridItem(
     Card(
         modifier = modifier
             .width(160.dp)
-            .bounceClick()
             .clickable { onClick(component.id) },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
     ) {
         Column {
             Box(
@@ -453,7 +437,6 @@ fun AmazonGridItem(
                     loading = { CircularProgressIndicator(modifier = Modifier.size(20.dp)) }
                 )
             }
-            
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = component.name,
@@ -463,9 +446,7 @@ fun AmazonGridItem(
                     fontWeight = FontWeight.Medium,
                     minLines = 2
                 )
-                
                 Spacer(modifier = Modifier.height(8.dp))
-                
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "$",
@@ -480,11 +461,10 @@ fun AmazonGridItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                
                 Text(
                     text = "Envío GRATIS",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF007185), // Amazon teal color
+                    color = Color(0xFF007185),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -518,7 +498,7 @@ fun SearchBar(
 
 @Composable
 fun ComponentItem(
-    component: Component, 
+    component: Component,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -526,7 +506,6 @@ fun ComponentItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .bounceClick()
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp, pressedElevation = 4.dp),
         shape = MaterialTheme.shapes.extraLarge,
@@ -535,17 +514,13 @@ fun ComponentItem(
         )
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SubcomposeAsyncImage(
                 model = component.imageUrl ?: "https://via.placeholder.com/150",
                 contentDescription = component.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                modifier = Modifier.size(80.dp).clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop,
                 loading = {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -553,9 +528,7 @@ fun ComponentItem(
                     }
                 }
             )
-            
             Spacer(modifier = Modifier.width(16.dp))
-            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = component.name,
