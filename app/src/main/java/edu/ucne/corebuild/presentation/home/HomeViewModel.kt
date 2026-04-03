@@ -5,20 +5,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.CartRepository
-import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed class HomeNavigationEvent {
-    data object NavigateToCart : HomeNavigationEvent()
+sealed interface HomeNavigationEvent {
+    data object NavigateToCart : HomeNavigationEvent
 }
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val componentRepository: ComponentRepository,
     private val getComponentsUseCase: GetComponentsUseCase,
     private val statsRepository: StatsRepository,
     private val cartRepository: CartRepository
