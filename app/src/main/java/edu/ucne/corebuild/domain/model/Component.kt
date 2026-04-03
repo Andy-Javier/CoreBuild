@@ -1,13 +1,5 @@
 package edu.ucne.corebuild.domain.model
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.json.JsonClassDiscriminator
-import kotlinx.serialization.ExperimentalSerializationApi
-
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-@JsonClassDiscriminator("component_class")
 sealed class Component {
     abstract val id: Int
     abstract val name: String
@@ -16,8 +8,6 @@ sealed class Component {
     abstract val category: String
     abstract val imageUrl: String?
 
-    @Serializable
-    @SerialName("cpu")
     data class CPU(
         override val id: Int,
         override val name: String,
@@ -33,12 +23,11 @@ sealed class Component {
         val tdp: String,
         val cache: String? = null,
         val integratedGraphics: String? = null,
+        val ramSupport: String? = null,
         override val category: String = "Procesador",
         override val imageUrl: String? = null
     ) : Component()
 
-    @Serializable
-    @SerialName("gpu")
     data class GPU(
         override val id: Int,
         override val name: String,
@@ -48,6 +37,9 @@ sealed class Component {
         val chipset: String,
         val vram: String,
         val vramType: String,
+        val memoryBus: String? = null,
+        val baseClock: String? = null,
+        val boostClock: String? = null,
         val consumptionWatts: String,
         val recommendedPSU: String? = null,
         val pcieInterface: String? = null,
@@ -56,8 +48,6 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
-    @Serializable
-    @SerialName("motherboard")
     data class Motherboard(
         override val id: Int,
         override val name: String,
@@ -68,21 +58,20 @@ sealed class Component {
         val chipset: String,
         val format: String,
         val ramType: String,
+        val maxRamSpeed: String? = null,
+        val ramSlots: Int? = null,
         val maxRamCapacity: String? = null,
         val slotsM2: Int? = null,
         override val category: String = "Placa Base",
         override val imageUrl: String? = null
     ) : Component()
 
-    @Serializable
-    @SerialName("ram")
     data class RAM(
         override val id: Int,
         override val name: String,
         override val description: String,
         override val price: Double,
         val brand: String,
-        @SerialName("ram_type_internal")
         val type: String,
         val capacity: String,
         val speed: String,
@@ -93,8 +82,6 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
-    @Serializable
-    @SerialName("psu")
     data class PSU(
         override val id: Int,
         override val name: String,
