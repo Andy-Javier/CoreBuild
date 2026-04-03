@@ -12,19 +12,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.PerformanceBar
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottleneckScreen(
     viewModel: BottleneckViewModel = hiltViewModel(),
     onMenuClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    BottleneckScreenContent(
+    BottleneckBody(
         state = state,
         onEvent = viewModel::onEvent,
         onMenuClick = onMenuClick
@@ -33,7 +33,7 @@ fun BottleneckScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottleneckScreenContent(
+fun BottleneckBody(
     state: BottleneckUiState,
     onEvent: (BottleneckEvent) -> Unit,
     onMenuClick: () -> Unit
@@ -203,7 +203,7 @@ fun ResultCard(percentage: Double, status: String) {
 @Composable
 fun BottleneckScreenPreview() {
     CoreBuildTheme {
-        BottleneckScreenContent(
+        BottleneckBody(
             state = BottleneckUiState(),
             onEvent = {},
             onMenuClick = {}
