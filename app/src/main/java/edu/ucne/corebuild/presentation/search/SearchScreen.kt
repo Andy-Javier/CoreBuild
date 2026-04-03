@@ -18,19 +18,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onBackClick: () -> Unit,
     onComponentClick: (Int) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    SearchScreenContent(
+    SearchBody(
         uiState = uiState,
         onBackClick = onBackClick,
         onComponentClick = onComponentClick,
@@ -40,7 +40,7 @@ fun SearchScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreenContent(
+fun SearchBody(
     uiState: SearchUiState,
     onBackClick: () -> Unit,
     onComponentClick: (Int) -> Unit,
@@ -213,7 +213,7 @@ fun ComponentSearchItem(component: Component, onClick: () -> Unit) {
 @Composable
 fun SearchScreenPreview() {
     CoreBuildTheme {
-        SearchScreenContent(
+        SearchBody(
             uiState = SearchUiState(),
             onBackClick = {},
             onComponentClick = {},
