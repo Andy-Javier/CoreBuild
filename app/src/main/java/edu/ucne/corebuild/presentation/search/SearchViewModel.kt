@@ -4,16 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
-import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val componentRepository: ComponentRepository
+    private val getComponentsUseCase: GetComponentsUseCase
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -25,7 +24,7 @@ class SearchViewModel @Inject constructor(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-        val componentsFlow = componentRepository.getComponents()
+        val componentsFlow = getComponentsUseCase()
 
         combine(
             _query.debounce(300),
