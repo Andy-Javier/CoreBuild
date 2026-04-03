@@ -14,6 +14,7 @@ import edu.ucne.corebuild.data.local.database.CoreBuildDatabase
 import edu.ucne.corebuild.data.remote.api.CoreBuildApi
 import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
 import edu.ucne.corebuild.data.repository.*
+import edu.ucne.corebuild.data.sync.SyncManager
 import edu.ucne.corebuild.domain.repository.*
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
@@ -61,8 +62,9 @@ object AppModule {
     @Singleton
     fun provideComponentRepository(
         dao: ComponentDao,
-        remoteDataSource: RemoteDataSource
-    ): ComponentRepository = ComponentRepositoryImpl(dao, remoteDataSource)
+        db: CoreBuildDatabase,
+        syncManager: SyncManager
+    ): ComponentRepository = ComponentRepositoryImpl(dao, db, syncManager)
 
     @Provides
     @Singleton
