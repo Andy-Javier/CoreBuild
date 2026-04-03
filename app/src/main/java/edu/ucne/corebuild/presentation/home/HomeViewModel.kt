@@ -2,9 +2,12 @@ package edu.ucne.corebuild.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.CartRepository
+import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
@@ -17,6 +20,7 @@ sealed class HomeNavigationEvent {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val componentRepository: ComponentRepository,
     private val getComponentsUseCase: GetComponentsUseCase,
     private val statsRepository: StatsRepository,
     private val cartRepository: CartRepository
@@ -33,6 +37,13 @@ class HomeViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val _debouncedQuery = _searchQuery.debounce(300)
+
+    val pagedComponents: StateFlow<PagingData<Component>> =
+        componentRepository.getComponentsStream()
+            .cachedIn(viewModelScope)
+            .stateIn(viewModelScope,
+                     SharingStarted.WhileSubscribed(5000),
+                     PagingData.empty())
 
     init {
         viewModelScope.launch {
@@ -146,20 +157,17 @@ class HomeViewModel @Inject constructor(
         val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.firstOrNull() ?: return null
         val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.firstOrNull() ?: return null
         
-        // Limpiamos el socket para una comparación más robusta (quitamos espacios y pasamos a minúsculas)
         val cleanCpuSocket = cpu.socket.replace(" ", "").lowercase()
         
         val mobo = mobos.filter { 
             it.socket.replace(" ", "").lowercase() == cleanCpuSocket 
         }.minByOrNull { Math.abs(it.price - (budget * 0.15)) } 
         
-        // Si no hay motherboard compatible con el socket, cancelamos esta build para no mostrar datos erróneos
         if (mobo == null) return null
             
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
 
         val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
-        // Añadimos un pequeño buffer de seguridad a la fuente
         val psu = psus.filter { it.wattage >= gpuRecWatts }
             .minByOrNull { it.wattage } 
             
