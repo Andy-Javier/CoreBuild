@@ -1,8 +1,8 @@
 package edu.ucne.corebuild.data.repository
 
 import edu.ucne.corebuild.data.local.dao.ComponentDao
-import edu.ucne.corebuild.data.local.mapper.toDomain
 import edu.ucne.corebuild.data.local.mapper.toEntity
+import edu.ucne.corebuild.data.local.mapper.toDomain as toDomainEntity
 import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
 import edu.ucne.corebuild.data.remote.dto.*
 import edu.ucne.corebuild.domain.model.Component
@@ -26,13 +26,13 @@ class ComponentRepositoryImpl @Inject constructor(
                     refreshAllCategories()
                 }
             }
-            .map { entities -> entities.map { it.toDomain() } }
+            .map { entities -> entities.map { it.toDomainEntity() } }
             .flowOn(Dispatchers.IO)
     }
 
     override fun getComponentById(id: Int): Flow<Component?> {
         return dao.getComponentById(id)
-            .map { it?.toDomain() }
+            .map { it?.toDomainEntity() }
             .flowOn(Dispatchers.IO)
     }
 
@@ -43,7 +43,7 @@ class ComponentRepositoryImpl @Inject constructor(
                     val entities = list.map { dto ->
                         val domain = dto.toDomain()
                         val imageUrl = determineCpuImage(domain.name, domain.generation)
-                        domain.copy(imageUrl = imageUrl).toEntity()
+                        domain.withImageUrl(imageUrl).toEntity()
                     }
                     dao.insertAll(entities)
                 }
@@ -55,7 +55,7 @@ class ComponentRepositoryImpl @Inject constructor(
                     val entities = list.map { dto ->
                         val domain = dto.toDomain(dto.id + 1000)
                         val imageUrl = determineGpuImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
+                        domain.withImageUrl(imageUrl).toEntity()
                     }
                     dao.insertAll(entities)
                 }
@@ -67,7 +67,7 @@ class ComponentRepositoryImpl @Inject constructor(
                     val entities = list.map { dto ->
                         val domain = dto.toDomain(dto.id + 2000)
                         val imageUrl = determineMotherboardImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
+                        domain.withImageUrl(imageUrl).toEntity()
                     }
                     dao.insertAll(entities)
                 }
@@ -79,7 +79,7 @@ class ComponentRepositoryImpl @Inject constructor(
                     val entities = list.map { dto ->
                         val domain = dto.toDomain(dto.id + 3000)
                         val imageUrl = determineRamImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
+                        domain.withImageUrl(imageUrl).toEntity()
                     }
                     dao.insertAll(entities)
                 }
@@ -91,7 +91,7 @@ class ComponentRepositoryImpl @Inject constructor(
                     val entities = list.map { dto ->
                         val domain = dto.toDomain(dto.id + 4000)
                         val imageUrl = determinePsuImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
+                        domain.withImageUrl(imageUrl).toEntity()
                     }
                     dao.insertAll(entities)
                 }
