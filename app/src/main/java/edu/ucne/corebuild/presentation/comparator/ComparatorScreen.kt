@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.presentation.components.PerformanceBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,50 +190,49 @@ fun WinnerHeader(c1: Component, c2: Component) {
 
 @Composable
 fun ComparisonBar(metric: Metric) {
-    val color1 = if (metric.v1 == metric.v2) Color.Gray else if ((metric.v1 > metric.v2 && !metric.inverse) || (metric.v1 < metric.v2 && metric.inverse)) Color(0xFF4CAF50) else Color(0xFFE57373)
-    val color2 = if (metric.v1 == metric.v2) Color.Gray else if ((metric.v2 > metric.v1 && !metric.inverse) || (metric.v2 < metric.v1 && metric.inverse)) Color(0xFF4CAF50) else Color(0xFFE57373)
-
-    val total = metric.v1 + metric.v2
-    val ratio1 = if (total > 0) (metric.v1 / total).toFloat().coerceIn(0.05f, 0.95f) else 0.5f
-    val ratio2 = 1f - ratio1
-
-    val animRatio1 by animateFloatAsState(targetValue = ratio1, label = "bar1")
-    val animRatio2 by animateFloatAsState(targetValue = ratio2, label = "bar2")
+    val maxVal = maxOf(metric.v1, metric.v2).coerceAtLeast(1.0)
+    val norm1 = (metric.v1 / maxVal).toFloat()
+    val norm2 = (metric.v2 / maxVal).toFloat()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(metric.label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Text(
+            text = metric.label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            // Lado 1
-            Box(modifier = Modifier.weight(animRatio1).height(12.dp).clip(CircleShape).background(color1))
-            
-            // Valores
-            Row(modifier = Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(metric.t1, fontWeight = FontWeight.Bold, color = color1, fontSize = 12.sp)
-                Text(" vs ", color = MaterialTheme.colorScheme.outline, fontSize = 10.sp)
-                Text(metric.t2, fontWeight = FontWeight.Bold, color = color2, fontSize = 12.sp)
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                PerformanceBar(value = norm1)
+                Text(
+                    text = metric.t1,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
             }
-
-            // Lado 2
-            Box(modifier = Modifier.weight(animRatio2).height(12.dp).clip(CircleShape).background(color2))
-        }
-
-        val diff = if (metric.v2 > 0 && metric.v1 != metric.v2) {
-            val pct = ((maxOf(metric.v1, metric.v2) - minOf(metric.v1, metric.v2))
-                    / minOf(metric.v1, metric.v2) * 100).toInt()
-            val winner = if ((metric.v1 > metric.v2 && !metric.inverse) ||
-                            (metric.v1 < metric.v2 && metric.inverse)) "C1" else "C2"
-            "+$pct% mejor en $winner"
-        } else null
-
-        if (diff != null) {
+            
             Text(
-                diff,
+                " VS ",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                PerformanceBar(value = norm2)
+                Text(
+                    text = metric.t2,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
+            }
         }
     }
 }
