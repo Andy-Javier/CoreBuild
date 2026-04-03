@@ -4,14 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
-import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
-import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
+import edu.ucne.corebuild.domain.use_case.GetComponentByIdUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -19,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProductDetailViewModel @Inject constructor(
-    private val getComponentUseCase: GetComponentUseCase,
+    private val getComponentByIdUseCase: GetComponentByIdUseCase,
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val favoriteRepository: FavoriteRepository,
@@ -34,7 +33,7 @@ class ProductDetailViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val _component = _componentId.filterNotNull().flatMapLatest { id ->
-        getComponentUseCase(id).onEach { component ->
+        getComponentByIdUseCase(id).onEach { component ->
             component?.let { statsRepository.recordView(it.id) }
         }
     }

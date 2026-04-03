@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.Component
@@ -34,42 +35,27 @@ fun ProductDetailScreen(
     onBackClick: () -> Unit,
     onCartClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(id) {
         viewModel.onEvent(ProductDetailEvent.LoadComponent(id))
     }
 
-    ProductDetailContent(
+    ProductDetailBody(
         state = state,
+        onEvent = viewModel::onEvent,
         onBackClick = onBackClick,
-        onCartClick = onCartClick,
-        onAddToCart = { component, quantity ->
-            viewModel.onEvent(ProductDetailEvent.AddToCart(component, quantity))
-        },
-        onBuyNow = { component, quantity ->
-            viewModel.onEvent(ProductDetailEvent.AddToCart(component, quantity))
-            onCartClick()
-        },
-        onToggleFavorite = {
-            viewModel.onEvent(ProductDetailEvent.OnToggleFavorite)
-        },
-        onDismissSnackbar = {
-            viewModel.onEvent(ProductDetailEvent.DismissSnackbar)
-        }
+        onCartClick = onCartClick
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductDetailContent(
+fun ProductDetailBody(
     state: ProductDetailUiState,
+    onEvent: (ProductDetailEvent) -> Unit,
     onBackClick: () -> Unit,
-    onCartClick: () -> Unit,
-    onAddToCart: (Component, Int) -> Unit,
-    onBuyNow: (Component, Int) -> Unit,
-    onToggleFavorite: () -> Unit,
-    onDismissSnackbar: () -> Unit
+    onCartClick: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -90,7 +76,7 @@ fun ProductDetailContent(
         state.snackbarMessage?.let {
             scope.launch {
                 snackbarHostState.showSnackbar(it)
-                onDismissSnackbar()
+                onEvent(ProductDetailEvent.DismissSnackbar)
             }
         }
     }
@@ -107,7 +93,7 @@ fun ProductDetailContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onToggleFavorite) {
+                    IconButton(onClick = { onEvent(ProductDetailEvent.OnToggleFavorite) }) {
                         Icon(
                             imageVector = if (state.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Favorito",
@@ -193,7 +179,7 @@ fun ProductDetailContent(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { onAddToCart(component, quantity) },
+                                onClick = { onEvent(ProductDetailEvent.AddToCart(component, quantity)) },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(56.dp),
@@ -206,7 +192,10 @@ fun ProductDetailContent(
                             }
                             
                             Button(
-                                onClick = { onBuyNow(component, quantity) },
+                                onClick = { 
+                                    onEvent(ProductDetailEvent.OnBuyNow(component, quantity))
+                                    onCartClick()
+                                },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(56.dp),
@@ -441,14 +430,11 @@ fun DetailRow(label: String, value: String) {
 @Composable
 fun ProductDetailScreenPreview() {
     CoreBuildTheme {
-        ProductDetailContent(
+        ProductDetailBody(
             state = ProductDetailUiState(),
+            onEvent = {},
             onBackClick = {},
-            onCartClick = {},
-            onAddToCart = { _, _ -> },
-            onBuyNow = { _, _ -> },
-            onToggleFavorite = {},
-            onDismissSnackbar = {}
+            onCartClick = {}
         )
     }
 }

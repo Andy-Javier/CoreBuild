@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,23 +18,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.model.OrderMode
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
     viewModel: OrdersViewModel = hiltViewModel(),
     onOrderClick: (Int) -> Unit,
     onMenuClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    OrdersScreenContent(
+    OrdersBody(
         state = state,
+        onEvent = viewModel::onEvent,
         onOrderClick = onOrderClick,
         onMenuClick = onMenuClick
     )
@@ -43,8 +43,9 @@ fun OrdersScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrdersScreenContent(
+fun OrdersBody(
     state: OrdersUiState,
+    onEvent: (OrdersEvent) -> Unit,
     onOrderClick: (Int) -> Unit,
     onMenuClick: () -> Unit
 ) {
@@ -191,8 +192,9 @@ fun OrderCard(order: Order, onClick: () -> Unit) {
 @Composable
 fun OrdersScreenPreview() {
     CoreBuildTheme {
-        OrdersScreenContent(
+        OrdersBody(
             state = OrdersUiState(),
+            onEvent = {},
             onOrderClick = {},
             onMenuClick = {}
         )

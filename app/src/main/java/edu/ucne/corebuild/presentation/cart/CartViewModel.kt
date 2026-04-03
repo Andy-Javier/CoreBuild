@@ -17,9 +17,9 @@ import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
-sealed class CartNavigationEvent {
-    data object NavigateToLogin : CartNavigationEvent()
-    data object NavigateToThanks : CartNavigationEvent()
+sealed interface CartNavigationEvent {
+    data object NavigateToLogin : CartNavigationEvent
+    data object NavigateToThanks : CartNavigationEvent
 }
 
 @HiltViewModel

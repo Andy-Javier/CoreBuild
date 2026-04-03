@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,21 +17,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.presentation.components.PerformanceBar
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BuildOverviewScreen(
     onBackClick: () -> Unit,
     onGoToHome: () -> Unit,
     viewModel: BuildOverviewViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    BuildOverviewScreenContent(
+    BuildOverviewBody(
         uiState = uiState,
         onBackClick = onBackClick,
         onGoToHome = onGoToHome
@@ -41,7 +40,7 @@ fun BuildOverviewScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BuildOverviewScreenContent(
+fun BuildOverviewBody(
     uiState: BuildOverviewUiState,
     onBackClick: () -> Unit,
     onGoToHome: () -> Unit
@@ -254,7 +253,7 @@ fun ComponentSummaryItem(item: CartItem) {
 @Composable
 fun BuildOverviewScreenPreview() {
     CoreBuildTheme {
-        BuildOverviewScreenContent(
+        BuildOverviewBody(
             uiState = BuildOverviewUiState(),
             onBackClick = {},
             onGoToHome = {}

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
@@ -38,8 +39,8 @@ fun CartScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToThanks: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
-    val overviewState by overviewViewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val overviewState by overviewViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -57,7 +58,7 @@ fun CartScreen(
         }
     }
 
-    CartScreenContent(
+    CartBody(
         state = state,
         overviewState = overviewState,
         snackbarHostState = snackbarHostState,
@@ -69,7 +70,7 @@ fun CartScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreenContent(
+fun CartBody(
     state: CartUiState,
     overviewState: edu.ucne.corebuild.presentation.overview.BuildOverviewUiState,
     snackbarHostState: SnackbarHostState,
@@ -541,7 +542,7 @@ fun CartSummary(
 @Composable
 fun CartScreenPreview() {
     CoreBuildTheme {
-        CartScreenContent(
+        CartBody(
             state = CartUiState(),
             overviewState = edu.ucne.corebuild.presentation.overview.BuildOverviewUiState(),
             snackbarHostState = SnackbarHostState(),

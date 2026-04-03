@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import androidx.compose.runtime.LaunchedEffect
 import coil.compose.SubcomposeAsyncImage
@@ -36,7 +37,6 @@ import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmartBuildScreen(
     onBackClick: () -> Unit,
@@ -44,9 +44,9 @@ fun SmartBuildScreen(
     onCartClick: () -> Unit,
     viewModel: SmartBuildViewModel = hiltViewModel()
 ) {
-    val formState by viewModel.formState.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
-    val showSaveDialog by viewModel.showSaveDialog.collectAsState()
+    val formState by viewModel.formState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest { event ->
@@ -67,7 +67,7 @@ fun SmartBuildScreen(
         }
     }
 
-    SmartBuildScreenContent(
+    SmartBuildBody(
         formState = formState,
         uiState = uiState,
         onBackClick = onBackClick,
@@ -78,7 +78,7 @@ fun SmartBuildScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SmartBuildScreenContent(
+fun SmartBuildBody(
     formState: SmartBuildFormState,
     uiState: SmartBuildUiState,
     onBackClick: () -> Unit,
@@ -159,10 +159,10 @@ fun SmartBuildForm(
     onSelectGpu: (Component.GPU) -> Unit,
     onBuildClick: () -> Unit
 ) {
-    val cpuSearchQuery = viewModel?.cpuSearchQuery?.collectAsState()?.value ?: ""
-    val gpuSearchQuery = viewModel?.gpuSearchQuery?.collectAsState()?.value ?: ""
-    val cpuGroups = viewModel?.filteredCpuGroups?.collectAsState()?.value ?: emptyList()
-    val gpuGroups = viewModel?.filteredGpuGroups?.collectAsState()?.value ?: emptyList()
+    val cpuSearchQuery = viewModel?.cpuSearchQuery?.collectAsStateWithLifecycle()?.value ?: ""
+    val gpuSearchQuery = viewModel?.gpuSearchQuery?.collectAsStateWithLifecycle()?.value ?: ""
+    val cpuGroups = viewModel?.filteredCpuGroups?.collectAsStateWithLifecycle()?.value ?: emptyList()
+    val gpuGroups = viewModel?.filteredGpuGroups?.collectAsStateWithLifecycle()?.value ?: emptyList()
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -727,7 +727,7 @@ fun SaveBuildDialog(
 @Composable
 fun SmartBuildScreenPreview() {
     CoreBuildTheme {
-        SmartBuildScreenContent(
+        SmartBuildBody(
             formState = SmartBuildFormState(),
             uiState = SmartBuildUiState.Idle,
             onBackClick = {},

@@ -17,9 +17,9 @@ data class PerformanceUiState(
     val isLoading: Boolean = false
 )
 
-sealed class PerformanceEvent {
-    data class SelectCpu(val cpu: Component.CPU) : PerformanceEvent()
-    data class SelectGpu(val gpu: Component.GPU) : PerformanceEvent()
-    data class SelectGame(val game: GamePreset) : PerformanceEvent()
-    data class SelectResolution(val resolution: String) : PerformanceEvent()
+sealed interface PerformanceEvent {
+    data class SelectCpu(val cpu: Component.CPU) : PerformanceEvent
+    data class SelectGpu(val gpu: Component.GPU) : PerformanceEvent
+    data class SelectGame(val game: GamePreset) : PerformanceEvent
+    data class SelectResolution(val resolution: String) : PerformanceEvent
 }

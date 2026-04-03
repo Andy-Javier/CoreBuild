@@ -13,9 +13,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel(),
@@ -23,7 +23,7 @@ fun RegisterScreen(
     onLoginClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isLogged) {
         if (uiState.isLogged) {
@@ -31,7 +31,7 @@ fun RegisterScreen(
         }
     }
 
-    RegisterScreenContent(
+    RegisterBody(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onLoginClick = onLoginClick
@@ -40,7 +40,7 @@ fun RegisterScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreenContent(
+fun RegisterBody(
     uiState: AuthUiState,
     onEvent: (AuthEvent) -> Unit,
     onLoginClick: () -> Unit
@@ -149,7 +149,7 @@ fun RegisterScreenContent(
 @Composable
 fun RegisterScreenPreview() {
     CoreBuildTheme {
-        RegisterScreenContent(
+        RegisterBody(
             uiState = AuthUiState(),
             onEvent = {},
             onLoginClick = {}

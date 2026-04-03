@@ -8,6 +8,16 @@ sealed class Component {
     abstract val category: String
     abstract val imageUrl: String?
 
+    fun withImageUrl(url: String?): Component {
+        return when (this) {
+            is CPU -> this.copy(imageUrl = url)
+            is GPU -> this.copy(imageUrl = url)
+            is Motherboard -> this.copy(imageUrl = url)
+            is RAM -> this.copy(imageUrl = url)
+            is PSU -> this.copy(imageUrl = url)
+        }
+    }
+
     data class CPU(
         override val id: Int,
         override val name: String,

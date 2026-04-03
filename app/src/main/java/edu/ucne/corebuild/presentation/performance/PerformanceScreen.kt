@@ -22,19 +22,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.performance.GamePreset
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerformanceScreen(
     onMenuClick: () -> Unit,
     viewModel: PerformanceViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    PerformanceScreenContent(
+    PerformanceBody(
         uiState = uiState,
         onMenuClick = onMenuClick,
         onEvent = viewModel::onEvent
@@ -43,7 +43,7 @@ fun PerformanceScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerformanceScreenContent(
+fun PerformanceBody(
     uiState: PerformanceUiState,
     onMenuClick: () -> Unit,
     onEvent: (PerformanceEvent) -> Unit
@@ -320,7 +320,7 @@ fun ResultCard(result: edu.ucne.corebuild.domain.performance.FpsResult) {
 @Composable
 fun PerformanceScreenPreview() {
     CoreBuildTheme {
-        PerformanceScreenContent(
+        PerformanceBody(
             uiState = PerformanceUiState(),
             onMenuClick = {},
             onEvent = {}

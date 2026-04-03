@@ -25,20 +25,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.PerformanceBar
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComparatorScreen(
     onMenuClick: () -> Unit,
     viewModel: ComparatorViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    ComparatorScreenContent(
+    ComparatorBody(
         uiState = uiState,
         onMenuClick = onMenuClick,
         onEvent = viewModel::onEvent
@@ -47,7 +47,7 @@ fun ComparatorScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ComparatorScreenContent(
+fun ComparatorBody(
     uiState: ComparatorUiState,
     onMenuClick: () -> Unit,
     onEvent: (ComparatorEvent) -> Unit
@@ -350,7 +350,7 @@ data class Metric(val label: String, val v1: Double, val v2: Double, val t1: Str
 @Composable
 fun ComparatorScreenPreview() {
     CoreBuildTheme {
-        ComparatorScreenContent(
+        ComparatorBody(
             uiState = ComparatorUiState(),
             onMenuClick = {},
             onEvent = {}

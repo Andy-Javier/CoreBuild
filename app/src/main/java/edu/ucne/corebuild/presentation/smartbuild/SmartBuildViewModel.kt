@@ -5,9 +5,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.CartRepository
-import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuild
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
+import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,8 +30,8 @@ data class SmartBuildFormState(
 }
 
 sealed class SmartBuildUiState {
-    object Idle : SmartBuildUiState()
-    object Loading : SmartBuildUiState()
+    data object Idle : SmartBuildUiState()
+    data object Loading : SmartBuildUiState()
     data class Success(val build: SmartBuild) : SmartBuildUiState()
     data class Error(val message: String) : SmartBuildUiState()
 }
@@ -69,7 +69,7 @@ fun List<Component.GPU>.groupGpusByBrand(): List<GroupedComponents<Component.GPU
 
 @HiltViewModel
 class SmartBuildViewModel @Inject constructor(
-    private val componentRepository: ComponentRepository,
+    private val getComponentsUseCase: GetComponentsUseCase,
     private val smartBuildGenerator: SmartBuildGenerator,
     private val cartRepository: CartRepository
 ) : ViewModel() {
@@ -111,7 +111,7 @@ class SmartBuildViewModel @Inject constructor(
 
     private fun loadComponents() {
         viewModelScope.launch {
-            componentRepository.getComponents().collect { components ->
+            getComponentsUseCase().collect { components ->
                 _formState.update { state ->
                     state.copy(
                         cpus = components.filterIsInstance<Component.CPU>(),
@@ -146,7 +146,7 @@ class SmartBuildViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = SmartBuildUiState.Loading
             try {
-                val allComponents = componentRepository.getComponents().first()
+                val allComponents = getComponentsUseCase().first()
                 val result = smartBuildGenerator.generateBuild(
                     anchorCpu = if (state.cpuModeEnabled) state.selectedCpu else null,
                     anchorGpu = if (state.gpuModeEnabled) state.selectedGpu else null,

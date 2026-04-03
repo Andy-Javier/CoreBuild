@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,26 +17,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailScreen(
     orderId: Int,
     onBackClick: () -> Unit,
     viewModel: OrderDetailViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(orderId) {
         viewModel.onEvent(OrderDetailEvent.LoadOrder(orderId))
     }
 
-    OrderDetailScreenContent(
+    OrderDetailBody(
         state = state,
         onBackClick = onBackClick
     )
@@ -45,7 +44,7 @@ fun OrderDetailScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderDetailScreenContent(
+fun OrderDetailBody(
     state: OrderDetailUiState,
     onBackClick: () -> Unit
 ) {
@@ -242,7 +241,7 @@ fun OrderItemRow(component: Component, quantity: Int) {
 @Composable
 fun OrderDetailScreenPreview() {
     CoreBuildTheme {
-        OrderDetailScreenContent(
+        OrderDetailBody(
             state = OrderDetailUiState(),
             onBackClick = {}
         )
