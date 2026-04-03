@@ -2,8 +2,6 @@ package edu.ucne.corebuild.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.CartRepository
@@ -37,13 +35,6 @@ class HomeViewModel @Inject constructor(
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val _debouncedQuery = _searchQuery.debounce(300)
-
-    val pagedComponents: StateFlow<PagingData<Component>> =
-        componentRepository.getComponentsStream()
-            .cachedIn(viewModelScope)
-            .stateIn(viewModelScope,
-                     SharingStarted.WhileSubscribed(5000),
-                     PagingData.empty())
 
     init {
         viewModelScope.launch {
@@ -80,9 +71,8 @@ class HomeViewModel @Inject constructor(
         val (loading, featured, showDialog) = ui
 
         val filtered = components.filter { component ->
-            val matchesQuery = if (debouncedQuery.isBlank()) true 
-                               else component.name.contains(debouncedQuery, ignoreCase = true)
-            
+            val matchesQuery = if (debouncedQuery.isBlank()) true
+            else component.name.contains(debouncedQuery, ignoreCase = true)
             val matchesCategory = when (selectedCat) {
                 null -> true
                 "CPU" -> component.category == "Procesador"
@@ -145,7 +135,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun createBuild(
-        name: String, 
+        name: String,
         desc: String,
         cpus: List<Component.CPU>,
         gpus: List<Component.GPU>,
@@ -156,23 +146,15 @@ class HomeViewModel @Inject constructor(
     ): PredefinedBuild? {
         val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.firstOrNull() ?: return null
         val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.firstOrNull() ?: return null
-        
         val cleanCpuSocket = cpu.socket.replace(" ", "").lowercase()
-        
-        val mobo = mobos.filter { 
-            it.socket.replace(" ", "").lowercase() == cleanCpuSocket 
-        }.minByOrNull { Math.abs(it.price - (budget * 0.15)) } 
-        
+        val mobo = mobos.filter {
+            it.socket.replace(" ", "").lowercase() == cleanCpuSocket
+        }.minByOrNull { Math.abs(it.price - (budget * 0.15)) }
         if (mobo == null) return null
-            
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
-
         val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
-        val psu = psus.filter { it.wattage >= gpuRecWatts }
-            .minByOrNull { it.wattage } 
-            
+        val psu = psus.filter { it.wattage >= gpuRecWatts }.minByOrNull { it.wattage }
         if (psu == null) return null
-
         val buildList = listOf(cpu, gpu, mobo, ram, psu)
         return PredefinedBuild(
             name = name,
@@ -195,7 +177,7 @@ class HomeViewModel @Inject constructor(
                     _showBuildDialog.value = false
                     _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
-                HomeEvent.ResetNavigation -> { /* Managed by SharedFlow */ }
+                HomeEvent.ResetNavigation -> { }
                 HomeEvent.LoadComponents -> { }
             }
         }

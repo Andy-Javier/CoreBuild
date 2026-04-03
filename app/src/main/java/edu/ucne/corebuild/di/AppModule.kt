@@ -14,7 +14,6 @@ import edu.ucne.corebuild.data.local.database.CoreBuildDatabase
 import edu.ucne.corebuild.data.remote.api.CoreBuildApi
 import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
 import edu.ucne.corebuild.data.repository.*
-import edu.ucne.corebuild.data.sync.SyncManager
 import edu.ucne.corebuild.domain.repository.*
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
@@ -54,7 +53,7 @@ object AppModule {
 
     @Provides
     fun provideCartDao(db: CoreBuildDatabase): CartDao = db.cartDao()
-    
+
     @Provides
     fun provideStatsDao(db: CoreBuildDatabase): StatsDao = db.statsDao()
 
@@ -62,9 +61,8 @@ object AppModule {
     @Singleton
     fun provideComponentRepository(
         dao: ComponentDao,
-        db: CoreBuildDatabase,
-        syncManager: SyncManager
-    ): ComponentRepository = ComponentRepositoryImpl(dao, db, syncManager)
+        remoteDataSource: RemoteDataSource
+    ): ComponentRepository = ComponentRepositoryImpl(dao, remoteDataSource)
 
     @Provides
     @Singleton
@@ -84,12 +82,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideBuildScoreCalculator(compatibilityEngine: CompatibilityEngine): BuildScoreCalculator = 
+    fun provideBuildScoreCalculator(compatibilityEngine: CompatibilityEngine): BuildScoreCalculator =
         BuildScoreCalculator(compatibilityEngine)
 
     @Provides
     @Singleton
-    fun provideBuildRecommender(compatibilityEngine: CompatibilityEngine): BuildRecommender = 
+    fun provideBuildRecommender(compatibilityEngine: CompatibilityEngine): BuildRecommender =
         BuildRecommender(compatibilityEngine)
 
     @Provides
@@ -123,7 +121,7 @@ object AppModule {
     fun provideCoreBuildApi(retrofit: Retrofit): CoreBuildApi {
         return retrofit.create(CoreBuildApi::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun provideRemoteDataSource(api: CoreBuildApi): RemoteDataSource {
@@ -132,6 +130,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideStatsRepository(statsDao: StatsDao, componentDao: ComponentDao): StatsRepository = 
+    fun provideStatsRepository(statsDao: StatsDao, componentDao: ComponentDao): StatsRepository =
         StatsRepositoryImpl(statsDao, componentDao)
 }

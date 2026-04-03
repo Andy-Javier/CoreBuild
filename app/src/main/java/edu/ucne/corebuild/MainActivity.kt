@@ -52,7 +52,6 @@ import edu.ucne.corebuild.presentation.home.HomeScreen
 import edu.ucne.corebuild.presentation.navigation.Screen
 import edu.ucne.corebuild.presentation.orders.OrderDetailScreen
 import edu.ucne.corebuild.presentation.orders.OrdersScreen
-import edu.ucne.corebuild.presentation.overview.BuildOverviewScreen
 import edu.ucne.corebuild.presentation.performance.PerformanceScreen
 import edu.ucne.corebuild.presentation.recommendation.RecommendationScreen
 import edu.ucne.corebuild.presentation.smartbuild.BuildSelectorScreen
@@ -190,15 +189,6 @@ fun CoreBuildAppContent(
                     }
                 )
                 DrawerItem(
-                    icon = Icons.Default.Dashboard,
-                    label = "Resumen del Build",
-                    selected = currentRoute?.contains("Overview") == true,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(Screen.Overview)
-                    }
-                )
-                DrawerItem(
                     icon = Icons.Default.Favorite,
                     label = "Mis Favoritos",
                     selected = currentRoute?.contains("Favorites") == true,
@@ -296,16 +286,6 @@ fun CoreBuildAppContent(
                     onComponentClick = { id -> navController.navigate(Screen.Detail(id)) },
                     onCartClick = { navController.navigate(Screen.Cart) },
                     onMenuClick = { scope.launch { drawerState.open() } }
-                )
-            }
-            composable<Screen.Overview> {
-                BuildOverviewScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onGoToHome = { 
-                        navController.navigate(Screen.Home) { 
-                            popUpTo(Screen.Home) { inclusive = true } 
-                        } 
-                    }
                 )
             }
             composable<Screen.Login> {
