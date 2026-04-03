@@ -19,20 +19,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecommendationScreen(
     onMenuClick: () -> Unit,
     onComponentClick: (Int) -> Unit,
     viewModel: RecommendationViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    RecommendationScreenContent(
+    RecommendationBody(
         uiState = uiState,
         onMenuClick = onMenuClick,
         onComponentClick = onComponentClick,
@@ -42,7 +42,7 @@ fun RecommendationScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecommendationScreenContent(
+fun RecommendationBody(
     uiState: RecommendationUiState,
     onMenuClick: () -> Unit,
     onComponentClick: (Int) -> Unit,
@@ -256,7 +256,7 @@ fun RecommendedItem(component: Component, onClick: (Int) -> Unit) {
 @Composable
 fun RecommendationScreenPreview() {
     CoreBuildTheme {
-        RecommendationScreenContent(
+        RecommendationBody(
             uiState = RecommendationUiState(),
             onMenuClick = {},
             onComponentClick = {},
