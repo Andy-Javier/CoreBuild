@@ -25,7 +25,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
+import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.PerformanceBar
+import edu.ucne.corebuild.presentation.components.bounceClick
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,12 +63,18 @@ fun CartScreen(
             TopAppBar(
                 title = { Text("Carrito de Compras") },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(
+                        onClick = onMenuClick,
+                        modifier = Modifier.bounceClick()
+                    ) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
                 },
                 actions = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.bounceClick()
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar")
                     }
                 }
@@ -166,19 +174,25 @@ fun CartContent(
 ) {
     LazyColumn(modifier = modifier) {
         item {
-            BuildScoreSection(state)
+            AnimatedListItem {
+                BuildScoreSection(state)
+            }
         }
         if (state.warnings.isNotEmpty()) {
             item {
-                WarningSection(state.warnings)
+                AnimatedListItem {
+                    WarningSection(state.warnings)
+                }
             }
         }
         items(state.cartItems) { item ->
-            CartItemRow(
-                item = item,
-                onUpdateQuantity = onUpdateQuantity,
-                onRemove = onRemove
-            )
+            AnimatedListItem {
+                CartItemRow(
+                    item = item,
+                    onUpdateQuantity = onUpdateQuantity,
+                    onRemove = onRemove
+                )
+            }
         }
     }
 }
@@ -323,7 +337,7 @@ fun CartItemRow(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = { onUpdateQuantity(item.component.id, item.quantity - 1) },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp).bounceClick()
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = "Disminuir", modifier = Modifier.size(16.dp))
                         }
@@ -335,7 +349,7 @@ fun CartItemRow(
                         )
                         IconButton(
                             onClick = { onUpdateQuantity(item.component.id, item.quantity + 1) },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp).bounceClick()
                         ) {
                             Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
                         }
@@ -344,7 +358,10 @@ fun CartItemRow(
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                IconButton(onClick = { onRemove(item.component.id) }) {
+                IconButton(
+                    onClick = { onRemove(item.component.id) },
+                    modifier = Modifier.bounceClick()
+                ) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
                 }
             }
@@ -388,7 +405,7 @@ fun CartSummary(
             ) {
                 OutlinedButton(
                     onClick = onClearCart,
-                    modifier = Modifier.weight(1f).height(48.dp),
+                    modifier = Modifier.weight(1f).height(48.dp).bounceClick(),
                     shape = MaterialTheme.shapes.large
                 ) {
                     Icon(Icons.Default.DeleteSweep, contentDescription = null)
@@ -397,7 +414,7 @@ fun CartSummary(
                 }
                 Button(
                     onClick = onCheckout,
-                    modifier = Modifier.weight(1.3f).height(48.dp),
+                    modifier = Modifier.weight(1.3f).height(48.dp).bounceClick(),
                     shape = MaterialTheme.shapes.large,
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
