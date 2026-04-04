@@ -47,6 +47,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun extractBaseRamName(name: String): String {
+        val configPatterns = listOf(
+            Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
+            Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
+        )
+        var baseName = name
+        for (pattern in configPatterns) {
+            val match = pattern.find(baseName)
+            if (match != null) {
+                baseName = baseName.substring(0, match.range.first).trim()
+                break
+            }
+        }
+        return baseName
+    }
+
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
             getComponentsUseCase(),
@@ -68,7 +84,24 @@ class HomeViewModel @Inject constructor(
         val (immediateQuery, debouncedQuery, selectedCat) = inputs
         val (loading, featured, showDialog) = ui
 
-        val filtered = components.filter { component ->
+        // Group RAMs by base name to show only one in the list
+        val distinctComponents = mutableListOf<Component>()
+        val processedRamModels = mutableSetOf<String>()
+
+        components.forEach { component ->
+            if (component is Component.RAM) {
+                val baseName = extractBaseRamName(component.name)
+                if (baseName !in processedRamModels) {
+                    processedRamModels.add(baseName)
+                    // We modify the representative name to be the base name
+                    distinctComponents.add(component.copy(name = baseName))
+                }
+            } else {
+                distinctComponents.add(component)
+            }
+        }
+
+        val filtered = distinctComponents.filter { component ->
             val matchesQuery = if (debouncedQuery.isBlank()) true
             else component.name.contains(debouncedQuery, ignoreCase = true)
             val matchesCategory = when (selectedCat) {
@@ -150,8 +183,8 @@ class HomeViewModel @Inject constructor(
         }.minByOrNull { Math.abs(it.price - (budget * 0.15)) }
         if (mobo == null) return null
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
-        val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
-        val psu = psus.filter { it.wattage >= gpuRecWatts }.minByOrNull { it.wattage }
+        val psuWattsReq = 600 // Simplification
+        val psu = psus.filter { it.wattage >= psuWattsReq }.minByOrNull { it.wattage }
         if (psu == null) return null
         val buildList = listOf(cpu, gpu, mobo, ram, psu)
         return PredefinedBuild(

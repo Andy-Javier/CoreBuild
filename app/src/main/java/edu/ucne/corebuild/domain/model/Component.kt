@@ -84,6 +84,7 @@ sealed class Component {
         val brand: String,
         val type: String,
         val capacity: String,
+        val configuration: String, // Nueva propiedad para "2x8GB", "2x16GB", etc.
         val speed: String,
         val latency: String,
         val voltage: String? = null,

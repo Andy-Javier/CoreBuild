@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.Component
@@ -35,27 +34,46 @@ fun ProductDetailScreen(
     onBackClick: () -> Unit,
     onCartClick: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(id) {
         viewModel.onEvent(ProductDetailEvent.LoadComponent(id))
     }
 
-    ProductDetailBody(
+    ProductDetailContent(
         state = state,
-        onEvent = viewModel::onEvent,
         onBackClick = onBackClick,
-        onCartClick = onCartClick
+        onCartClick = onCartClick,
+        onAddToCart = { component, quantity ->
+            viewModel.onEvent(ProductDetailEvent.AddToCart(component, quantity))
+        },
+        onBuyNow = { component, quantity ->
+            viewModel.onEvent(ProductDetailEvent.AddToCart(component, quantity))
+            onCartClick()
+        },
+        onToggleFavorite = {
+            viewModel.onEvent(ProductDetailEvent.OnToggleFavorite)
+        },
+        onVariantClick = { variantId ->
+            viewModel.onEvent(ProductDetailEvent.LoadComponent(variantId))
+        },
+        onDismissSnackbar = {
+            viewModel.onEvent(ProductDetailEvent.DismissSnackbar)
+        }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ProductDetailBody(
+fun ProductDetailContent(
     state: ProductDetailUiState,
-    onEvent: (ProductDetailEvent) -> Unit,
     onBackClick: () -> Unit,
-    onCartClick: () -> Unit
+    onCartClick: () -> Unit,
+    onAddToCart: (Component, Int) -> Unit,
+    onBuyNow: (Component, Int) -> Unit,
+    onToggleFavorite: () -> Unit,
+    onVariantClick: (Int) -> Unit,
+    onDismissSnackbar: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,7 +94,7 @@ fun ProductDetailBody(
         state.snackbarMessage?.let {
             scope.launch {
                 snackbarHostState.showSnackbar(it)
-                onEvent(ProductDetailEvent.DismissSnackbar)
+                onDismissSnackbar()
             }
         }
     }
@@ -93,7 +111,7 @@ fun ProductDetailBody(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onEvent(ProductDetailEvent.OnToggleFavorite) }) {
+                    IconButton(onClick = onToggleFavorite) {
                         Icon(
                             imageVector = if (state.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Favorito",
@@ -179,7 +197,7 @@ fun ProductDetailBody(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { onEvent(ProductDetailEvent.AddToCart(component, quantity)) },
+                                onClick = { onAddToCart(component, quantity) },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(56.dp),
@@ -192,10 +210,7 @@ fun ProductDetailBody(
                             }
                             
                             Button(
-                                onClick = { 
-                                    onEvent(ProductDetailEvent.OnBuyNow(component, quantity))
-                                    onCartClick()
-                                },
+                                onClick = { onBuyNow(component, quantity) },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(56.dp),
@@ -277,6 +292,33 @@ fun ProductDetailBody(
                                         style = MaterialTheme.typography.bodyLarge,
                                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
                                     )
+                                }
+                            }
+
+                            // Variantes de RAM (Selección de configuración: 2x8, 2x16, etc.)
+                            if (state.variants.size > 1 && component is Component.RAM) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Text(
+                                    "Configuración de memoria",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    state.variants.forEach { variant ->
+                                        val isSelected = variant.id == component.id
+                                        val ramVariant = variant as Component.RAM
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { onVariantClick(variant.id) },
+                                            label = { Text(ramVariant.configuration.ifBlank { ramVariant.capacity }) },
+                                            shape = MaterialTheme.shapes.medium
+                                        )
+                                    }
                                 }
                             }
                             
@@ -406,6 +448,7 @@ fun SpecificComponentDetails(component: Component) {
                     DetailRow("Marca", component.brand)
                     DetailRow("Tipo", component.type)
                     DetailRow("Capacidad", component.capacity)
+                    DetailRow("Configuración", component.configuration)
                     DetailRow("Velocidad", component.speed)
                     DetailRow("Latencia", component.latency)
                 }
@@ -430,11 +473,15 @@ fun DetailRow(label: String, value: String) {
 @Composable
 fun ProductDetailScreenPreview() {
     CoreBuildTheme {
-        ProductDetailBody(
+        ProductDetailContent(
             state = ProductDetailUiState(),
-            onEvent = {},
             onBackClick = {},
-            onCartClick = {}
+            onCartClick = {},
+            onAddToCart = { _, _ -> },
+            onBuyNow = { _, _ -> },
+            onToggleFavorite = {},
+            onVariantClick = {},
+            onDismissSnackbar = {}
         )
     }
 }

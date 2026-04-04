@@ -26,6 +26,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.presentation.overview.BuildOverviewViewModel
+import edu.ucne.corebuild.presentation.overview.BuildOverviewUiState
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.flow.collectLatest
 
@@ -72,7 +73,7 @@ fun CartScreen(
 @Composable
 fun CartBody(
     state: CartUiState,
-    overviewState: edu.ucne.corebuild.presentation.overview.BuildOverviewUiState,
+    overviewState: BuildOverviewUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onMenuClick: () -> Unit,
@@ -168,7 +169,7 @@ fun CartBody(
 @Composable
 fun BuildScoreSection(
     state: CartUiState,
-    overviewState: edu.ucne.corebuild.presentation.overview.BuildOverviewUiState
+    overviewState: BuildOverviewUiState
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -544,7 +545,7 @@ fun CartScreenPreview() {
     CoreBuildTheme {
         CartBody(
             state = CartUiState(),
-            overviewState = edu.ucne.corebuild.presentation.overview.BuildOverviewUiState(),
+            overviewState = BuildOverviewUiState(),
             snackbarHostState = SnackbarHostState(),
             onBackClick = {},
             onMenuClick = {},
