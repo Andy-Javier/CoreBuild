@@ -12,6 +12,7 @@ import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
+import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -20,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProductDetailViewModel @Inject constructor(
     private val getComponentUseCase: GetComponentUseCase,
+    private val getComponentsUseCase: GetComponentsUseCase,
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val favoriteRepository: FavoriteRepository,
@@ -44,6 +46,20 @@ class ProductDetailViewModel @Inject constructor(
         favoriteRepository.isFavorite(id)
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val _variants = _component.filterNotNull().flatMapLatest { component ->
+        if (component is Component.RAM) {
+            val baseName = extractBaseRamName(component.name)
+            getComponentsUseCase().map { all ->
+                all.filterIsInstance<Component.RAM>().filter { 
+                    extractBaseRamName(it.name) == baseName 
+                }
+            }
+        } else {
+            flowOf(emptyList<Component>())
+        }
+    }
+
     private val _operationState = combine(_isLoading, _snackbarMessage, _orderCompleted) { loading, msg, completed ->
         Triple(loading, msg, completed)
     }
@@ -52,14 +68,16 @@ class ProductDetailViewModel @Inject constructor(
         _component,
         _isFavorite,
         _operationState,
-        cartRepository.getCartItems()
-    ) { component, isFav, opState, cartItems ->
+        cartRepository.getCartItems(),
+        _variants
+    ) { component, isFav, opState, cartItems, variants ->
         val (loading, message, completed) = opState
         val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 3
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
         
         ProductDetailUiState(
             component = component,
+            variants = variants,
             isFavorite = isFav,
             isLoading = loading,
             snackbarMessage = message,
@@ -72,6 +90,22 @@ class ProductDetailViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ProductDetailUiState(isLoading = true)
     )
+
+    private fun extractBaseRamName(name: String): String {
+        val configPatterns = listOf(
+            Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
+            Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
+        )
+        var baseName = name
+        for (pattern in configPatterns) {
+            val match = pattern.find(baseName)
+            if (match != null) {
+                baseName = baseName.substring(0, match.range.first).trim()
+                break
+            }
+        }
+        return baseName
+    }
 
     fun onEvent(event: ProductDetailEvent) {
         when (event) {
