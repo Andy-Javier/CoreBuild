@@ -61,12 +61,21 @@ fun AnimatedFilterChip(
     modifier: Modifier = Modifier,
     leadingIcon: @Composable (() -> Unit)? = null
 ) {
+    val borderWidth by animateDpAsState(if (selected) 2.dp else 0.dp, label = "borderWidth")
+    val borderAlpha by animateFloatAsState(if (selected) 1f else 0f, label = "borderAlpha")
+
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = label,
         modifier = modifier,
         leadingIcon = leadingIcon,
-        shape = CircleShape
+        shape = CircleShape,
+        border = if (selected) FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = true,
+            borderColor = MaterialTheme.colorScheme.primary.copy(alpha = borderAlpha),
+            borderWidth = borderWidth
+        ) else null
     )
 }
