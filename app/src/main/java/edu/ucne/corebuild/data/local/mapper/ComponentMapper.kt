@@ -62,8 +62,9 @@ fun ComponentEntity.toDomain(): Component {
             brand = brand ?: "",
             type = ramType ?: "",
             capacity = ramCapacity ?: "",
+            configuration = ramConfiguration ?: "", 
             speed = ramSpeed ?: "",
-            latency = ramLatency ?: "" ,
+            latency = ramLatency ?: "",
             voltage = voltage,
             hasRGB = hasRGB,
             category = category,
@@ -110,7 +111,8 @@ fun Component.toEntity(): ComponentEntity {
         is Component.RAM -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
             componentType = "RAM", brand = brand, ramType = type, ramCapacity = capacity,
-            ramSpeed = speed, ramLatency = latency, voltage = voltage, hasRGB = hasRGB, imageUrl = imageUrl
+            ramConfiguration = configuration, ramSpeed = speed, ramLatency = latency,
+            voltage = voltage, hasRGB = hasRGB, imageUrl = imageUrl
         )
         is Component.PSU -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
