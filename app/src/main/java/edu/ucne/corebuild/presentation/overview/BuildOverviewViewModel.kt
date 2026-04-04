@@ -21,6 +21,8 @@ class BuildOverviewViewModel @Inject constructor(
 
     val uiState: StateFlow<BuildOverviewUiState> = cartRepository.getCartItems()
         .map { items ->
+            if (items.isEmpty()) return@map BuildOverviewUiState(isLoading = false)
+
             val components = items.map { it.component }
             val cpu = components.filterIsInstance<Component.CPU>().firstOrNull()
             val gpu = components.filterIsInstance<Component.GPU>().firstOrNull()
@@ -29,13 +31,9 @@ class BuildOverviewViewModel @Inject constructor(
             // 1. Build Score
             val scoreResult = buildScoreCalculator.calculateScore(items)
             val scoreValue = scoreResult.score / 100f
-            val scoreLabel = when {
-                scoreValue >= 0.75f -> "Excelente"
-                scoreValue >= 0.45f -> "Balanceado"
-                else -> "Mejorable"
-            }
+            val scoreLabel = scoreResult.label
 
-            // 2. Rendimiento (FPS) - Usando GTA V @ 1080p como base para el resumen general
+            // 2. Rendimiento (FPS)
             val fpsResult = if (cpu != null && gpu != null) {
                 PerformanceCalculator.estimateFps(cpu, gpu, GamePreset.GTA_V, "1080p")
             } else null
@@ -43,11 +41,12 @@ class BuildOverviewViewModel @Inject constructor(
             val estimatedFps = fpsResult?.fps ?: 0
             val fpsBarValue = (estimatedFps / 144f).coerceIn(0f, 1f)
 
-            // 3. Bottleneck (Estimación inline basada en price ratio si no existe método en engine)
+            // 3. Bottleneck
             var bPercent = 0f
             var bLabel = "Sin problema"
             if (cpu != null && gpu != null) {
-                val ratio = gpu.price / cpu.price
+                val cPrice = cpu.price.coerceAtLeast(1.0)
+                val ratio = gpu.price / cPrice
                 when {
                     ratio > 4.0 -> { bPercent = 0.8f; bLabel = "CPU limitado" }
                     ratio < 1.0 -> { bPercent = 0.8f; bLabel = "GPU limitado" }
@@ -56,13 +55,21 @@ class BuildOverviewViewModel @Inject constructor(
                 }
             }
 
-            // 4. Consumo
-            val estimatedWatts = components.sumOf { 
-                when (it) {
-                    is Component.CPU -> it.tdp?.filter { char -> char.isDigit() }?.toIntOrNull() ?: 65
-                    is Component.GPU -> it.consumptionWatts.filter { char -> char.isDigit() }.toIntOrNull() ?: 200
-                    else -> 10 // Margen para otros componentes
-                }
+
+            val estimatedWatts = components.sumOf { component ->
+                try {
+                    when (component) {
+                        is Component.CPU -> {
+                            val tdpStr = component.tdp ?: ""
+                            tdpStr.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 65
+                        }
+                        is Component.GPU -> {
+                            val consStr = component.consumptionWatts ?: ""
+                            consStr.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 200
+                        }
+                        else -> 10
+                    }
+                } catch (e: Exception) { 10 }
             }
             val psuWatts = psu?.wattage ?: 0
             val powerBarValue = if (psuWatts > 0) (estimatedWatts / psuWatts.toFloat()).coerceIn(0f, 1f) else 0f
@@ -86,6 +93,7 @@ class BuildOverviewViewModel @Inject constructor(
                 warnings = warnings
             )
         }
+        .catch { emit(BuildOverviewUiState(isLoading = false)) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
