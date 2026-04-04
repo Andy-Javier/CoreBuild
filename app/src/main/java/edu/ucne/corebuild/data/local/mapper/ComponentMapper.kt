@@ -32,7 +32,7 @@ fun ComponentEntity.toDomain(): Component {
             chipset = chipset ?: "",
             vram = vram ?: "",
             vramType = vramType ?: "",
-            consumptionWatts = recommendedWattage ?: "",
+            consumptionWatts = consumptionWatts ?: "",
             recommendedPSU = recommendedPSU,
             pcieInterface = pcieInterface,
             length = length,
@@ -99,7 +99,7 @@ fun Component.toEntity(): ComponentEntity {
         is Component.GPU -> ComponentEntity(
             id = id, name = name, description = description, price = price, category = category,
             componentType = "GPU", brand = brand, chipset = chipset, vram = vram, vramType = vramType,
-            recommendedWattage = consumptionWatts, recommendedPSU = recommendedPSU, 
+            consumptionWatts = consumptionWatts, recommendedPSU = recommendedPSU, 
             pcieInterface = pcieInterface, length = length, imageUrl = imageUrl
         )
         is Component.Motherboard -> ComponentEntity(
