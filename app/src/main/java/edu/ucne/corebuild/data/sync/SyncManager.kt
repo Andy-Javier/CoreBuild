@@ -153,11 +153,11 @@ class SyncManager @Inject constructor(
     private fun determineMotherboardImage(name: String): String? {
         val search = name.lowercase()
         return when {
-            search.contains("b550") && search.contains("tomahawk") -> 
+            search.contains("b550") || search.contains("tomahawk") -> 
                 "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775335932/imagen_2026-04-04_165211818_aniu8s.png"
-            search.contains("x570") && search.contains("steel") && search.contains("legend") -> 
+            search.contains("x570") || search.contains("steel legend") -> 
                 "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775335986/imagen_2026-04-04_165305611_pxlc39.png"
-            search.contains("a620m") && search.contains("tuf") -> 
+            search.contains("a620") || search.contains("tuf") -> 
                 "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775336077/imagen_2026-04-04_165437283_qwb80j.png"
             else -> null
         }
@@ -165,11 +165,11 @@ class SyncManager @Inject constructor(
 
     private fun determineRamImage(name: String): String? {
         val search = name.lowercase()
-        return if (search.contains("vengeance") && search.contains("rgb") && search.contains("3600") && search.contains("2x16")) "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789924/imagen_2026-03-29_091202718_yrikxo.png" else null
+        return if (search.contains("vengeance") || search.contains("rgb")) "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789924/imagen_2026-03-29_091202718_yrikxo.png" else null
     }
 
     private fun determinePsuImage(name: String): String? {
         val search = name.lowercase()
-        return if (search.contains("rog") && search.contains("thor") && search.contains("850")) "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789973/imagen_2026-03-29_091253254_ueu1cz.png" else null
+        return if (search.contains("rog") || search.contains("thor") || search.contains("850")) "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789973/imagen_2026-03-29_091253254_ueu1cz.png" else null
     }
 }
