@@ -19,6 +19,7 @@ import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
 import edu.ucne.corebuild.domain.recommendation.BuildRecommender
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
+import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
 import edu.ucne.corebuild.presentation.notifications.NotificationHelper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -80,6 +81,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideCompatibilityEngine(): CompatibilityEngine = CompatibilityEngine()
+
+    @Provides
+    @Singleton
+    fun provideRecommendationEngine(): RecommendationEngine = RecommendationEngine()
 
     @Provides
     @Singleton

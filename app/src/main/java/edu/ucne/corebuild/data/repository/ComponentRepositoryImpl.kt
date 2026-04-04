@@ -210,6 +210,9 @@ class ComponentRepositoryImpl @Inject constructor(
     private fun determineMotherboardImage(name: String): String? {
         val search = name.lowercase()
         return when {
+            search.contains("tomahawk") && search.contains("b550") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775335932/imagen_2026-04-04_165211818_aniu8s.png"
+            search.contains("steel legend") && search.contains("x570") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775335986/imagen_2026-04-04_165305611_pxlc39.png"
+            search.contains("tuf") && (search.contains("a620") || search.contains("620")) -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775336077/imagen_2026-04-04_165437283_qwb80j.png"
             search.contains("h510m") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323732/imagen_2026-04-04_132844289_flu508.png"
             search.contains("b560") && search.contains("tomahawk") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323802/imagen_2026-04-04_132954356_t4bhkn.png"
             search.contains("h610m") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323826/imagen_2026-04-04_133017815_ewgfgi.png"
