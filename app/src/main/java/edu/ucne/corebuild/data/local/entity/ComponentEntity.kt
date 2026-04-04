@@ -43,6 +43,7 @@ data class ComponentEntity(
     
     // RAM fields
     val ramCapacity: String? = null,
+    val ramConfiguration: String? = null, // Agregado para "2x8GB", etc.
     val ramSpeed: String? = null,
     val ramLatency: String? = null,
     val ramType: String? = null,
