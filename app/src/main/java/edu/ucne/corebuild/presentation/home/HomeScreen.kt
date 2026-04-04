@@ -32,6 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.presentation.components.AnimatedFilterChip
+import edu.ucne.corebuild.presentation.components.AnimatedListItem
+import edu.ucne.corebuild.presentation.components.bounceClick
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.flow.collectLatest
 
@@ -55,7 +58,10 @@ fun HomeScreen(
     HomeScreenContent(
         state = state,
         onEvent = viewModel::onEvent,
-        onComponentClick = onComponentClick,
+        onComponentClick = { id ->
+            viewModel.recordComponentClick(id)
+            onComponentClick(id)
+        },
         onCartClick = onCartClick,
         onMenuClick = onMenuClick
     )
@@ -88,12 +94,18 @@ fun HomeScreenContent(
                     Text("CoreBuild", fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(
+                        onClick = onMenuClick,
+                        modifier = Modifier.bounceClick()
+                    ) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
                 },
                 actions = {
-                    IconButton(onClick = onCartClick) {
+                    IconButton(
+                        onClick = onCartClick,
+                        modifier = Modifier.bounceClick()
+                    ) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
                     }
                 },
@@ -124,10 +136,12 @@ fun HomeScreenContent(
             if (state.selectedCategory == null && state.searchQuery.isBlank()) {
                 state.featuredBuild?.let { build ->
                     item {
-                        FeaturedBuildCard(
-                            build = build,
-                            onClick = { onEvent(HomeEvent.OnToggleBuildDialog) }
-                        )
+                        AnimatedListItem {
+                            FeaturedBuildCard(
+                                build = build,
+                                onClick = { onEvent(HomeEvent.OnToggleBuildDialog) }
+                            )
+                        }
                     }
                 }
             }
@@ -142,6 +156,24 @@ fun HomeScreenContent(
                     }
                 }
             } else {
+                // Inteligencia de Recomendaciones
+                if (state.selectedCategory == null && state.smartRecommendations.isNotEmpty()) {
+                    item {
+                        AnimatedListItem {
+                            SectionHeader(
+                                title = "✨ Recomendado para ti",
+                                subtitle = "Basado en tu actividad"
+                            )
+                        }
+                    }
+                    item {
+                        ComponentHorizontalRow(
+                            components = state.smartRecommendations,
+                            onComponentClick = onComponentClick
+                        )
+                    }
+                }
+
                 if (state.selectedCategory == null && state.searchQuery.isBlank()) {
                     if (state.intelComponents.isNotEmpty()) {
                         item {
@@ -169,7 +201,7 @@ fun HomeScreenContent(
                     }
                     if (state.recentlyViewed.isNotEmpty()) {
                         item {
-                            SectionHeader("Recomendado para ti", "Visto recientemente")
+                            SectionHeader("Visto recientemente", "Tu historial")
                             ComponentHorizontalRow(state.recentlyViewed, onComponentClick)
                         }
                     }
@@ -194,21 +226,23 @@ fun HomeScreenContent(
                 } else {
                     val chunks = state.filteredComponents.chunked(2)
                     items(chunks) { rowItems ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            rowItems.forEach { component ->
-                                AmazonGridItem(
-                                    component = component,
-                                    onClick = onComponentClick,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                        AnimatedListItem {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                rowItems.forEach { component ->
+                                    AmazonGridItem(
+                                        component = component,
+                                        onClick = onComponentClick,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }
@@ -225,7 +259,9 @@ fun ComponentHorizontalRow(components: List<Component>, onComponentClick: (Int) 
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(components) { component ->
-            AmazonGridItem(component, onComponentClick)
+            AnimatedListItem {
+                AmazonGridItem(component, onComponentClick)
+            }
         }
     }
     Spacer(modifier = Modifier.height(24.dp))
@@ -241,6 +277,7 @@ fun FeaturedBuildCard(
             .fillMaxWidth()
             .height(220.dp)
             .padding(16.dp)
+            .bounceClick()
             .clickable { onClick() },
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -349,12 +386,18 @@ fun FeaturedBuildDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onAddToCart) {
+            Button(
+                onClick = onAddToCart,
+                modifier = Modifier.bounceClick()
+            ) {
                 Text("Añadir Todo al Carrito")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.bounceClick()
+            ) {
                 Text("Cerrar")
             }
         }
@@ -389,19 +432,19 @@ fun CategoryFilter(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            FilterChip(
+            AnimatedFilterChip(
                 selected = selectedCategory == null,
                 onClick = { onCategorySelected(null) },
                 label = { Text("Todos") },
-                shape = CircleShape
+                modifier = Modifier.bounceClick()
             )
         }
         items(categories) { category ->
-            FilterChip(
+            AnimatedFilterChip(
                 selected = selectedCategory == category,
                 onClick = { onCategorySelected(category) },
                 label = { Text(category) },
-                shape = CircleShape
+                modifier = Modifier.bounceClick()
             )
         }
     }
@@ -416,6 +459,7 @@ fun AmazonGridItem(
     Card(
         modifier = modifier
             .width(160.dp)
+            .bounceClick()
             .clickable { onClick(component.id) },
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -508,6 +552,7 @@ fun ComponentItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .bounceClick()
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp, pressedElevation = 4.dp),
         shape = MaterialTheme.shapes.extraLarge,

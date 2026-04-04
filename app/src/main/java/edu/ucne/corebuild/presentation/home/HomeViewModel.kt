@@ -4,22 +4,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.domain.model.CartItem
+import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
 import edu.ucne.corebuild.domain.repository.CartRepository
+import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed interface HomeNavigationEvent {
-    data object NavigateToCart : HomeNavigationEvent
+sealed class HomeNavigationEvent {
+    data object NavigateToCart : HomeNavigationEvent()
 }
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val componentRepository: ComponentRepository,
     private val getComponentsUseCase: GetComponentsUseCase,
     private val statsRepository: StatsRepository,
-    private val cartRepository: CartRepository
+    private val cartRepository: CartRepository,
+    private val favoriteRepository: FavoriteRepository,
+    private val recommendationEngine: RecommendationEngine
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -39,102 +46,88 @@ class HomeViewModel @Inject constructor(
             getComponentsUseCase()
                 .filter { it.isNotEmpty() }
                 .firstOrNull()
-                .let { components ->
-                    if (components != null) {
-                        generateRandomBuild(components)
-                    }
+                ?.let { components ->
+                    generateRandomBuild(components)
                 }
         }
     }
 
-    private fun extractBaseRamName(name: String): String {
-        val configPatterns = listOf(
-            Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
-            Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
-        )
-        var baseName = name
-        for (pattern in configPatterns) {
-            val match = pattern.find(baseName)
-            if (match != null) {
-                baseName = baseName.substring(0, match.range.first).trim()
-                break
-            }
-        }
-        return baseName
+
+    private val dataFlow = combine(
+        getComponentsUseCase(),
+        statsRepository.getRecentlyViewed(),
+        statsRepository.getTopRated(),
+        favoriteRepository.getFavoriteComponents(),
+        cartRepository.getCartItems()
+    ) { components, recently, top, favorites, cart ->
+        HomeDataGroup(components, recently, top, favorites, cart)
+    }
+
+    private val inputFlow = combine(
+        _searchQuery,
+        _debouncedQuery,
+        _selectedCategory
+    ) { query, debounced, category ->
+        HomeInputGroup(query, debounced, category)
+    }
+
+    private val uiLayersFlow = combine(
+        _isLoading,
+        _featuredBuild,
+        _showBuildDialog
+    ) { loading, featured, showDialog ->
+        HomeUiLayersGroup(loading, featured, showDialog)
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
-        combine(
-            getComponentsUseCase(),
-            statsRepository.getRecentlyViewed(),
-            statsRepository.getTopRated()
-        ) { c, rv, tr -> Triple(c, rv, tr) },
-        combine(
-            _searchQuery,
-            _debouncedQuery,
-            _selectedCategory
-        ) { q, dq, cat -> Triple(q, dq, cat) },
-        combine(
-            _isLoading,
-            _featuredBuild,
-            _showBuildDialog
-        ) { l, f, s -> Triple(l, f, s) }
+        dataFlow,
+        inputFlow,
+        uiLayersFlow
     ) { data, inputs, ui ->
-        val (components, recentlyViewed, topRated) = data
-        val (immediateQuery, debouncedQuery, selectedCat) = inputs
-        val (loading, featured, showDialog) = ui
-
-        // Group RAMs by base name to show only one in the list
-        val distinctComponents = mutableListOf<Component>()
-        val processedRamModels = mutableSetOf<String>()
-
-        components.forEach { component ->
-            if (component is Component.RAM) {
-                val baseName = extractBaseRamName(component.name)
-                if (baseName !in processedRamModels) {
-                    processedRamModels.add(baseName)
-                    // We modify the representative name to be the base name
-                    distinctComponents.add(component.copy(name = baseName))
-                }
-            } else {
-                distinctComponents.add(component)
-            }
-        }
-
-        val filtered = distinctComponents.filter { component ->
-            val matchesQuery = if (debouncedQuery.isBlank()) true
-            else component.name.contains(debouncedQuery, ignoreCase = true)
-            val matchesCategory = when (selectedCat) {
+        val filtered = data.components.filter { component ->
+            val matchesQuery = if (inputs.debouncedQuery.isBlank()) true 
+                               else component.name.contains(inputs.debouncedQuery, ignoreCase = true)
+            
+            val matchesCategory = when (inputs.category) {
                 null -> true
                 "CPU" -> component.category == "Procesador"
                 "GPU" -> component.category == "Tarjeta Gráfica"
                 "RAM" -> component.category == "Memoria RAM"
                 "Motherboard" -> component.category == "Placa Base"
                 "PSU" -> component.category == "Fuente de Poder"
-                else -> component.category.equals(selectedCat, ignoreCase = true)
+                else -> component.category.equals(inputs.category, ignoreCase = true)
             }
             matchesQuery && matchesCategory
         }
 
-        val intel = components.filter { it is Component.CPU && it.brand.contains("Intel", ignoreCase = true) }
-        val amdCpu = components.filter { it is Component.CPU && it.brand.contains("AMD", ignoreCase = true) }
-        val nvidia = components.filter { it is Component.GPU && (it.brand.contains("NVIDIA", ignoreCase = true) || it.name.contains("RTX", ignoreCase = true) || it.name.contains("GTX", ignoreCase = true)) }
-        val radeon = components.filter { it is Component.GPU && (it.brand.contains("AMD", ignoreCase = true) || it.brand.contains("Radeon", ignoreCase = true) || it.name.contains("RX ", ignoreCase = true)) }
+        val smartRecommendations = recommendationEngine.recommend(
+            allComponents = data.components,
+            recentlyViewed = data.recentlyViewed,
+            cartItems = data.cartItems.map { it.component },
+            favorites = data.favorites,
+            searchQuery = inputs.debouncedQuery
+        )
+
+        val intel = data.components.filter { it is Component.CPU && it.brand.contains("Intel", ignoreCase = true) }
+        val amdCpu = data.components.filter { it is Component.CPU && it.brand.contains("AMD", ignoreCase = true) }
+        val nvidia = data.components.filter { it is Component.GPU && (it.brand.contains("NVIDIA", ignoreCase = true) || it.name.contains("RTX", ignoreCase = true) || it.name.contains("GTX", ignoreCase = true)) }
+        val radeon = data.components.filter { it is Component.GPU && (it.brand.contains("AMD", ignoreCase = true) || it.brand.contains("Radeon", ignoreCase = true) || it.name.contains("RX ", ignoreCase = true)) }
 
         HomeUiState(
-            components = components,
+            components = data.components,
             filteredComponents = filtered,
-            recentlyViewed = recentlyViewed,
-            topRated = topRated,
+            recentlyViewed = data.recentlyViewed,
+            topRated = data.topRated,
             intelComponents = intel,
             amdCpuComponents = amdCpu,
             nvidiaComponents = nvidia,
             radeonComponents = radeon,
-            searchQuery = immediateQuery,
-            selectedCategory = selectedCat,
-            isLoading = loading,
-            featuredBuild = featured,
-            showBuildDialog = showDialog
+            searchQuery = inputs.query,
+            selectedCategory = inputs.category,
+            isLoading = ui.isLoading,
+            featuredBuild = ui.featuredBuild,
+            showBuildDialog = ui.showBuildDialog,
+            smartRecommendations = smartRecommendations
         )
     }.stateIn(
         scope = viewModelScope,
@@ -166,7 +159,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun createBuild(
-        name: String,
+        name: String, 
         desc: String,
         cpus: List<Component.CPU>,
         gpus: List<Component.GPU>,
@@ -177,15 +170,23 @@ class HomeViewModel @Inject constructor(
     ): PredefinedBuild? {
         val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.firstOrNull() ?: return null
         val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.firstOrNull() ?: return null
+        
         val cleanCpuSocket = cpu.socket.replace(" ", "").lowercase()
-        val mobo = mobos.filter {
-            it.socket.replace(" ", "").lowercase() == cleanCpuSocket
-        }.minByOrNull { Math.abs(it.price - (budget * 0.15)) }
+        
+        val mobo = mobos.filter { 
+            it.socket.replace(" ", "").lowercase() == cleanCpuSocket 
+        }.minByOrNull { Math.abs(it.price - (budget * 0.15)) } 
+        
         if (mobo == null) return null
+            
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
-        val psuWattsReq = 600 // Simplification
-        val psu = psus.filter { it.wattage >= psuWattsReq }.minByOrNull { it.wattage }
+
+        val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
+        val psu = psus.filter { it.wattage >= gpuRecWatts }
+            .minByOrNull { it.wattage } 
+            
         if (psu == null) return null
+
         val buildList = listOf(cpu, gpu, mobo, ram, psu)
         return PredefinedBuild(
             name = name,
@@ -208,9 +209,36 @@ class HomeViewModel @Inject constructor(
                     _showBuildDialog.value = false
                     _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
-                HomeEvent.ResetNavigation -> { }
+                HomeEvent.ResetNavigation -> { /* Managed by SharedFlow */ }
                 HomeEvent.LoadComponents -> { }
             }
         }
     }
+
+    fun recordComponentClick(id: Int) {
+        viewModelScope.launch {
+            statsRepository.recordView(id)
+        }
+    }
 }
+
+// Clases de ayuda para agrupar datos de flujos
+private data class HomeDataGroup(
+    val components: List<Component>,
+    val recentlyViewed: List<Component>,
+    val topRated: List<Component>,
+    val favorites: List<Component>,
+    val cartItems: List<CartItem>
+)
+
+private data class HomeInputGroup(
+    val query: String,
+    val debouncedQuery: String,
+    val category: String?
+)
+
+private data class HomeUiLayersGroup(
+    val isLoading: Boolean,
+    val featuredBuild: PredefinedBuild?,
+    val showBuildDialog: Boolean
+)

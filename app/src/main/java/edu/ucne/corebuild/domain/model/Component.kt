@@ -1,5 +1,8 @@
 package edu.ucne.corebuild.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 sealed class Component {
     abstract val id: Int
     abstract val name: String
@@ -18,6 +21,7 @@ sealed class Component {
         }
     }
 
+    @Serializable
     data class CPU(
         override val id: Int,
         override val name: String,
@@ -38,6 +42,7 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
+    @Serializable
     data class GPU(
         override val id: Int,
         override val name: String,
@@ -58,6 +63,7 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
+    @Serializable
     data class Motherboard(
         override val id: Int,
         override val name: String,
@@ -76,6 +82,7 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
+    @Serializable
     data class RAM(
         override val id: Int,
         override val name: String,
@@ -84,7 +91,7 @@ sealed class Component {
         val brand: String,
         val type: String,
         val capacity: String,
-        val configuration: String, // Nueva propiedad para "2x8GB", "2x16GB", etc.
+        val configuration: String,
         val speed: String,
         val latency: String,
         val voltage: String? = null,
@@ -93,6 +100,7 @@ sealed class Component {
         override val imageUrl: String? = null
     ) : Component()
 
+    @Serializable
     data class PSU(
         override val id: Int,
         override val name: String,
