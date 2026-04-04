@@ -105,29 +105,37 @@ class CartViewModel @Inject constructor(
                             date = Date(),
                             status = OrderMode.CREATED
                         )
-                        orderRepository.createOrder(order)
-                        cartRepository.clearCart()
                         
-                        _showOrderConfirmation.value = true
-                        _snackbarEvent.emit("¡Pedido realizado con éxito!")
-                        
-                        viewModelScope.launch {
-                            delay(5000)
-                            val orders = orderRepository.getAllOrders().first()
-                            val lastOrder = orders.maxByOrNull { it.id }
-                            if (lastOrder != null) {
-                                orderRepository.updateOrder(lastOrder.copy(status = OrderMode.ENVIADO))
-                            }
+                        try {
+                            orderRepository.createOrder(order)
+                            cartRepository.clearCart()
                             
-                            notificationHelper.sendOrderDeliveredNotification()
-                            _showOrderConfirmation.value = false
+                            _showOrderConfirmation.value = true
+                            _snackbarEvent.emit("¡Pedido realizado con éxito!")
+                            
+                            viewModelScope.launch {
+                                delay(5000)
+                                // Actualización de estado segura
+                                val orders = orderRepository.getAllOrders().first()
+                                if (orders.isNotEmpty()) {
+                                    val lastOrder = orders.maxByOrNull { it.id }
+                                    if (lastOrder != null) {
+                                        orderRepository.updateOrder(lastOrder.copy(status = OrderMode.ENVIADO))
+                                    }
+                                }
+                                
+                                notificationHelper.sendOrderDeliveredNotification()
+                                _showOrderConfirmation.value = false
+                            }
+                        } catch (e: Exception) {
+                            _snackbarEvent.emit("Error al procesar el pedido")
                         }
                     } else {
                         _snackbarEvent.emit("El carrito está vacío")
                     }
                 }
-                CartEvent.DismissSnackbar -> { /* Managed by SharedFlow now */ }
-                CartEvent.ResetNavigation -> { /* Managed by SharedFlow now */ }
+                CartEvent.DismissSnackbar -> { }
+                CartEvent.ResetNavigation -> { }
             }
         }
     }
