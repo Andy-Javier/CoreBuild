@@ -21,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Order
 import edu.ucne.corebuild.domain.model.OrderMode
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -178,7 +179,7 @@ fun OrderCard(order: Order, onClick: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = "$${String.format("%.2f", order.totalPrice)}",
+                    text = order.totalPrice.toPrice(),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
