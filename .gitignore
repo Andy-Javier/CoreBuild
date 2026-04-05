@@ -13,3 +13,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/src/main/java/edu/ucne/corebuild/domain/tracking/UserInteractionTracker.kt

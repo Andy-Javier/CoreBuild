@@ -9,9 +9,9 @@ class RecommendationEngine @Inject constructor() {
 
     fun recommend(
         allComponents: List<Component>,
-        recentlyViewed: List<Component>,   // weight 1
-        cartItems: List<Component>,        // weight 3
-        favorites: List<Component>,        // weight 2
+        recentlyViewed: List<Component>,
+        cartItems: List<Component>,
+        favorites: List<Component>,
         searchQuery: String                
     ): List<Component> {
         if (allComponents.isEmpty()) return emptyList()

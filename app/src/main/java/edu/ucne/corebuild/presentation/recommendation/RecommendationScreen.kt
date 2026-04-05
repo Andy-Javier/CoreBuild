@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @Composable
@@ -151,7 +152,7 @@ fun RecommendationBody(
                             val remaining = budgetVal - uiState.totalPrice
                             
                             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                            SummaryRow("Total Estimado:", "$${String.format("%.2f", uiState.totalPrice)}", true)
+                            SummaryRow("Total Estimado:", uiState.totalPrice.toPrice(), true)
                             
                             if (remaining < 0) {
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -168,7 +169,7 @@ fun RecommendationBody(
                                         Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            "⚠️ Supera tu presupuesto por $${String.format("%.2f", -remaining)}",
+                                            "⚠️ Supera tu presupuesto por ${(-remaining).toPrice()}",
                                             color = MaterialTheme.colorScheme.onErrorContainer,
                                             style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Bold
@@ -176,7 +177,7 @@ fun RecommendationBody(
                                     }
                                 }
                             } else {
-                                SummaryRow("Presupuesto Restante:", "$${String.format("%.2f", remaining)}", false)
+                                SummaryRow("Presupuesto Restante:", remaining.toPrice(), false)
                             }
                         }
                     }
@@ -247,7 +248,7 @@ fun RecommendedItem(component: Component, onClick: (Int) -> Unit) {
                 Text(component.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
                 Text(component.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             }
-            Text("$${String.format("%.0f", component.price)}", fontWeight = FontWeight.Bold)
+            Text(component.price.toPrice(), fontWeight = FontWeight.Bold)
         }
     }
 }

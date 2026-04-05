@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BuildOverviewViewModel @Inject constructor(
-    private val cartRepository: CartRepository,
+    cartRepository: CartRepository,
     private val compatibilityEngine: CompatibilityEngine,
     private val buildScoreCalculator: BuildScoreCalculator
 ) : ViewModel() {
@@ -28,12 +28,10 @@ class BuildOverviewViewModel @Inject constructor(
             val gpu = components.filterIsInstance<Component.GPU>().firstOrNull()
             val psu = components.filterIsInstance<Component.PSU>().firstOrNull()
 
-            // 1. Build Score
             val scoreResult = buildScoreCalculator.calculateScore(items)
             val scoreValue = scoreResult.score / 100f
             val scoreLabel = scoreResult.label
 
-            // 2. Rendimiento (FPS)
             val fpsResult = if (cpu != null && gpu != null) {
                 PerformanceCalculator.estimateFps(cpu, gpu, GamePreset.GTA_V, "1080p")
             } else null
@@ -41,7 +39,6 @@ class BuildOverviewViewModel @Inject constructor(
             val estimatedFps = fpsResult?.fps ?: 0
             val fpsBarValue = (estimatedFps / 144f).coerceIn(0f, 1f)
 
-            // 3. Bottleneck
             var bPercent = 0f
             var bLabel = "Sin problema"
             if (cpu != null && gpu != null) {
@@ -55,26 +52,24 @@ class BuildOverviewViewModel @Inject constructor(
                 }
             }
 
-
             val estimatedWatts = components.sumOf { component ->
                 try {
                     when (component) {
                         is Component.CPU -> {
-                            val tdpStr = component.tdp ?: ""
+                            val tdpStr = component.tdp
                             tdpStr.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 65
                         }
                         is Component.GPU -> {
-                            val consStr = component.consumptionWatts ?: ""
+                            val consStr = component.consumptionWatts
                             consStr.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 200
                         }
                         else -> 10
                     }
-                } catch (e: Exception) { 10 }
+                } catch (_: Exception) { 10 }
             }
             val psuWatts = psu?.wattage ?: 0
             val powerBarValue = if (psuWatts > 0) (estimatedWatts / psuWatts.toFloat()).coerceIn(0f, 1f) else 0f
 
-            // 5. Compatibilidad
             val warnings = compatibilityEngine.checkCompatibility(items)
 
             BuildOverviewUiState(

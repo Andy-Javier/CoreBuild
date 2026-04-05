@@ -27,13 +27,11 @@ fun LoginScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     LaunchedEffect(uiState.isLogged) {
         if (uiState.isLogged) {
             onLoginSuccess()
         }
     }
-
     LoginBody(
         uiState = uiState,
         onEvent = viewModel::onEvent,
@@ -51,7 +49,6 @@ fun LoginBody(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -73,7 +70,6 @@ fun LoginBody(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(32.dp))
-
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -82,9 +78,7 @@ fun LoginBody(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -102,9 +96,7 @@ fun LoginBody(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
             Button(
                 onClick = { onEvent(AuthEvent.OnLogin(email, password)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -120,11 +112,9 @@ fun LoginBody(
                     Text("Entrar")
                 }
             }
-
             TextButton(onClick = onRegisterClick) {
                 Text("¿No tienes cuenta? Regístrate")
             }
-
             if (uiState.error != null) {
                 Text(
                     text = uiState.error ?: "",

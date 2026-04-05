@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.presentation.components.PerformanceBar
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @Composable
@@ -94,7 +95,6 @@ fun BuildOverviewBody(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Build Score
                 item {
                     OverviewCard(title = "Build Score") {
                         Column(
@@ -127,7 +127,6 @@ fun BuildOverviewBody(
                     }
                 }
 
-                // 2. Rendimiento estimado
                 item {
                     OverviewCard(title = "Rendimiento estimado (GTA V @ 1080p)") {
                         Column {
@@ -138,7 +137,6 @@ fun BuildOverviewBody(
                     }
                 }
 
-                // 3. Cuello de botella
                 item {
                     OverviewCard(title = "Balance del Sistema") {
                         Column {
@@ -149,7 +147,6 @@ fun BuildOverviewBody(
                     }
                 }
 
-                // 4. Consumo energético
                 item {
                     OverviewCard(title = "Consumo Energético") {
                         Column {
@@ -167,7 +164,6 @@ fun BuildOverviewBody(
                     }
                 }
 
-                // 5. Compatibilidad
                 item {
                     OverviewCard(title = "Compatibilidad") {
                         Column {
@@ -197,7 +193,6 @@ fun BuildOverviewBody(
                     }
                 }
 
-                // 6. Componentes
                 item {
                     OverviewCard(title = "Componentes del build") {
                         LazyRow(
@@ -244,7 +239,7 @@ fun ComponentSummaryItem(item: CartItem) {
         Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(item.component.name, maxLines = 1, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-            Text("$${String.format("%.2f", item.component.price)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text(item.component.price.toPrice(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

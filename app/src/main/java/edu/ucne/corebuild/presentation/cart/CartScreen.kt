@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import edu.ucne.corebuild.domain.model.CartItem
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.presentation.overview.BuildOverviewViewModel
 import edu.ucne.corebuild.presentation.overview.BuildOverviewUiState
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
@@ -430,7 +431,7 @@ fun CartItemRow(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "$${String.format("%.2f", item.component.price)} c/u",
+                    text = "${item.component.price.toPrice()} c/u",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -453,7 +454,7 @@ fun CartItemRow(
                             )
                         }
                         Text(
-                            text = item.quantity.toString(),
+                            text = "${item.quantity}",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp)
@@ -506,7 +507,7 @@ fun CartSummary(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "$${String.format("%.2f", state.total)}",
+                    text = state.total.toPrice(),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold

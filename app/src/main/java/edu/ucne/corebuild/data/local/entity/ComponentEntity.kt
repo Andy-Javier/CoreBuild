@@ -10,12 +10,11 @@ data class ComponentEntity(
     val description: String,
     val price: Double,
     val category: String,
-    val componentType: String, // CPU, GPU, Motherboard, RAM, PSU
+    val componentType: String,
     val imageUrl: String? = null,
     
     val brand: String? = null,
     
-    // CPU fields
     val socket: String? = null,
     val generation: String? = null,
     val cores: Int? = null,
@@ -27,7 +26,6 @@ data class ComponentEntity(
     val integratedGraphics: String? = null,
     val ramSupport: String? = null,
     
-    // GPU fields
     val chipset: String? = null,
     val vram: String? = null,
     val vramType: String? = null,
@@ -39,7 +37,6 @@ data class ComponentEntity(
     val pcieInterface: String? = null,
     val length: String? = null,
     
-    // Motherboard fields
     val format: String? = null,
     val motherboardRamType: String? = null,
     val maxRamSpeed: String? = null,
@@ -47,16 +44,14 @@ data class ComponentEntity(
     val maxRamCapacity: String? = null,
     val slotsM2: Int? = null,
     
-    // RAM fields
     val ramCapacity: String? = null,
-    val ramConfiguration: String? = null, // Agregado para "2x8GB", etc.
+    val ramConfiguration: String? = null,
     val ramSpeed: String? = null,
     val ramLatency: String? = null,
     val ramType: String? = null,
     val voltage: String? = null,
     val hasRGB: Boolean? = null,
     
-    // PSU fields
     val psuWattage: Int? = null,
     val psuCertification: String? = null,
     val psuModularity: String? = null,

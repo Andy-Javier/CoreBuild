@@ -9,7 +9,7 @@ data class UserEntity(
     val id: Int? = null,
     val name: String,
     val email: String,
-    val password: String, // En una app real, esto debe estar hasheado
+    val password: String,
     val profilePicture: String? = null,
     val isLogged: Boolean = false
 )

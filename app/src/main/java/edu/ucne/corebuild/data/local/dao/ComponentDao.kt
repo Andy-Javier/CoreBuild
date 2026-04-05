@@ -12,20 +12,11 @@ interface ComponentDao {
     @Query("SELECT * FROM components")
     fun getComponents(): Flow<List<ComponentEntity>>
 
-    @Query("SELECT * FROM components")
-    suspend fun getAllSync(): List<ComponentEntity>
-
     @Query("SELECT * FROM components WHERE id = :id")
     fun getComponentById(id: Int): Flow<ComponentEntity?>
 
-    @Query("SELECT * FROM components WHERE id = :id")
-    suspend fun getComponentByIdSync(id: Int): ComponentEntity?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(components: List<ComponentEntity>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAll(entities: List<ComponentEntity>)
 
     @Query("SELECT COUNT(*) FROM components")
     suspend fun getCount(): Int

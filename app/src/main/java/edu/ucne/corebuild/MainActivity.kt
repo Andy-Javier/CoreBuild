@@ -76,7 +76,6 @@ class MainActivity : ComponentActivity() {
                     launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
-
             CoreBuildTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -101,7 +100,6 @@ fun CoreBuildAppContent(
     val currentRoute = navBackStackEntry?.destination?.route
     val authUiState by authViewModel.uiState.collectAsState()
     val context = LocalContext.current
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -151,9 +149,7 @@ fun CoreBuildAppContent(
                             )
                         }
                     }
-                    
                     Spacer(modifier = Modifier.width(12.dp))
-                    
                     Column {
                         Text(
                             text = if (authUiState.isLogged) authUiState.user?.name ?: "Usuario" else "Invitado",
@@ -172,11 +168,9 @@ fun CoreBuildAppContent(
                         )
                     }
                 }
-                
                 Spacer(modifier = Modifier.height(20.dp))
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
                 Spacer(modifier = Modifier.height(12.dp))
-                
                 DrawerItem(
                     icon = Icons.Default.Home,
                     label = "Inicio",
@@ -251,10 +245,8 @@ fun CoreBuildAppContent(
                         navController.navigate(Screen.BuildSelector)
                     }
                 )
-                
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
-                
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

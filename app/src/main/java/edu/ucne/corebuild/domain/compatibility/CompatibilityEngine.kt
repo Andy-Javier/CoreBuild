@@ -14,7 +14,6 @@ class CompatibilityEngine @Inject constructor() {
         val gpus = items.map { it.component }.filterIsInstance<Component.GPU>()
         val psus = items.map { it.component }.filterIsInstance<Component.PSU>()
 
-        // CPU vs Motherboard (Socket)
         if (cpus.isNotEmpty() && motherboards.isNotEmpty()) {
             cpus.forEach { cpu ->
                 motherboards.forEach { mobo ->
@@ -25,7 +24,6 @@ class CompatibilityEngine @Inject constructor() {
             }
         }
 
-        // GPU vs PSU (Wattage)
         if (gpus.isNotEmpty() && psus.isNotEmpty()) {
             val totalConsumptionWatts = gpus.sumOf { gpu ->
                 gpu.consumptionWatts.filter { it.isDigit() }.toIntOrNull() ?: 0
@@ -37,7 +35,6 @@ class CompatibilityEngine @Inject constructor() {
             }
         }
 
-        // Limit Check (Quantity)
         items.forEach { item ->
             val limit = getLimitForCategory(item.component)
             if (item.quantity > limit) {

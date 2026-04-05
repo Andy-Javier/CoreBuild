@@ -24,13 +24,11 @@ fun RegisterScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     LaunchedEffect(uiState.isLogged) {
         if (uiState.isLogged) {
             onRegisterSuccess()
         }
     }
-
     RegisterBody(
         uiState = uiState,
         onEvent = viewModel::onEvent,
@@ -49,7 +47,6 @@ fun RegisterBody(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -71,7 +68,6 @@ fun RegisterBody(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(32.dp))
-
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -80,9 +76,7 @@ fun RegisterBody(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -91,9 +85,7 @@ fun RegisterBody(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -111,9 +103,7 @@ fun RegisterBody(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
             Button(
                 onClick = { onEvent(AuthEvent.OnRegister(name, email, password)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -129,11 +119,9 @@ fun RegisterBody(
                     Text("Registrarse")
                 }
             }
-
             TextButton(onClick = onLoginClick) {
                 Text("¿Ya tienes cuenta? Inicia sesión")
             }
-
             if (uiState.error != null) {
                 Text(
                     text = uiState.error ?: "",

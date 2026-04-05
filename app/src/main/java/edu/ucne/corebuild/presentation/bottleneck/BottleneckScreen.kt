@@ -62,7 +62,6 @@ fun BottleneckBody(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            // CPU Selector
             BottleneckDropdown(
                 label = "Procesador (CPU)",
                 selectedComponent = state.selectedCpu,
@@ -70,7 +69,6 @@ fun BottleneckBody(
                 onSelect = { onEvent(BottleneckEvent.SelectCpu(it as Component.CPU)) }
             )
 
-            // GPU Selector
             BottleneckDropdown(
                 label = "Tarjeta Gráfica (GPU)",
                 selectedComponent = state.selectedGpu,
@@ -78,7 +76,6 @@ fun BottleneckBody(
                 onSelect = { onEvent(BottleneckEvent.SelectGpu(it as Component.GPU)) }
             )
 
-            // Resolution Selector
             ResolutionSelector(
                 selectedResolution = state.selectedResolution,
                 onResolutionSelect = { onEvent(BottleneckEvent.SelectResolution(it)) }
@@ -86,7 +83,6 @@ fun BottleneckBody(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Results Section
             if (state.selectedCpu != null && state.selectedGpu != null) {
                 ResultCard(state.bottleneckPercentage, state.status)
             }

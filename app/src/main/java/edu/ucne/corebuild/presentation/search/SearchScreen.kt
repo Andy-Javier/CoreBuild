@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @Composable
@@ -200,7 +201,7 @@ fun ComponentSearchItem(component: Component, onClick: () -> Unit) {
                 )
             }
             Text(
-                text = "$${String.format("%.2f", component.price)}",
+                text = component.price.toPrice(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary

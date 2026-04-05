@@ -70,7 +70,6 @@ fun ComparatorBody(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Selector de tipo (CPU/GPU)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 SegmentedButton(
                     selected = uiState.selectedType == "CPU",
@@ -86,7 +85,6 @@ fun ComparatorBody(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Selectores de componentes con miniaturas
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     if (uiState.selectedComponent1 != null) {
@@ -133,7 +131,6 @@ fun ComparatorBody(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Área de comparación
             if (uiState.selectedComponent1 != null && uiState.selectedComponent2 != null) {
                 ComparisonMatrix(uiState.selectedComponent1!!, uiState.selectedComponent2!!)
             } else {
@@ -155,7 +152,6 @@ fun ComparisonMatrix(c1: Component, c2: Component) {
             WinnerHeader(c1, c2)
         }
 
-        // Definir métricas según el tipo
         val metrics = when {
             c1 is Component.CPU && c2 is Component.CPU -> listOf(
                 Metric("Núcleos", c1.cores.toDouble(), c2.cores.toDouble(), "${c1.cores}", "${c2.cores}"),

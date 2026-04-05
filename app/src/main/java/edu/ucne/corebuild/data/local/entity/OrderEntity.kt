@@ -8,8 +8,8 @@ import androidx.room.TypeConverters
 data class OrderEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int? = null,
-    val componentsJson: String, // Lista de componentes serializada a JSON
+    val componentsJson: String,
     val totalPrice: Double,
-    val date: Long, // Timestamp
-    val status: String // CREATED, DELIVERED
+    val date: Long,
+    val status: String
 )

@@ -27,9 +27,6 @@ class BuildScoreCalculator @Inject constructor(
         var baseScore = 0.0
         val recs = mutableListOf<String>()
 
-        // === 1. PUNTOS BASE POR TIER (Máx 80 pts) ===
-        
-        // CPU (25 pts máx)
         cpu?.let {
             baseScore += when {
                 it.price > 350 -> 25
@@ -39,7 +36,6 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // GPU (25 pts máx)
         gpu?.let {
             baseScore += when {
                 it.price > 700 -> 25
@@ -49,7 +45,6 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // RAM (15 pts máx)
         ram?.let {
             val name = it.name.uppercase()
             var ramPts = when {
@@ -59,7 +54,6 @@ class BuildScoreCalculator @Inject constructor(
                 else -> 3
             }
 
-            // Extracción correcta de MHz usando regex
             val speedRegex = Regex("""(\d{4,5})\s*MHZ|DDR[45]-(\d{4,5})""")
             val speedMatch = speedRegex.find(name)
             val speed = speedMatch?.groupValues
@@ -73,7 +67,6 @@ class BuildScoreCalculator @Inject constructor(
             baseScore += ramPts.coerceAtMost(15)
         }
 
-        // PSU (10 pts máx)
         psu?.let {
             val name = it.name.uppercase()
             baseScore += when {
@@ -83,7 +76,6 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // Motherboard (5 pts máx)
         mobo?.let {
             val name = it.name.uppercase()
             baseScore += when {
@@ -93,27 +85,21 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // === 2. BONIFICACIONES DE SINERGIA (Suman sobre base) ===
-        
         var synergyBonus = 0.0
 
-        // Build Completo (+10)
         if (cpu != null && gpu != null && mobo != null && ram != null && psu != null) {
             synergyBonus += 10
         }
 
-        // DDR5 Synergy (+5)
         if (ram?.name?.contains("DDR5", true) == true) {
             synergyBonus += 5
         }
 
-        // Platform Synergy (+5) - Basado en motor de compatibilidad
         val warnings = compatibilityEngine.checkCompatibility(items)
         if (cpu != null && mobo != null && warnings.none { it.contains("Socket", true) }) {
             synergyBonus += 5
         }
 
-        // PSU Headroom (+5) - Al menos 20% de margen
         if (cpu != null && gpu != null && psu != null) {
             val cpuWatts = Regex("""\d+""").find(cpu.tdp)?.value?.toIntOrNull() ?: 65
             val gpuWatts = Regex("""\d+""").find(gpu.consumptionWatts)?.value?.toIntOrNull() ?: 200
@@ -122,25 +108,19 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // Cálculo total antes de penalizaciones (Máx teórico 105, normalizado a 100)
         var totalScore = ((baseScore + synergyBonus) / 105.0) * 100.0
 
-        // === 3. PENALIZACIONES (Restan del total) ===
-
-        // Incompatibilidades críticas (-30)
         if (warnings.isNotEmpty()) {
             totalScore -= 30
             recs.add("⚠️ Errores de compatibilidad detectados.")
         }
 
-        // Faltantes
         if (cpu == null) { totalScore -= 10; recs.add("Falta CPU (-10)") }
         if (mobo == null) { totalScore -= 10; recs.add("Falta Placa Base (-10)") }
         if (ram == null) { totalScore -= 10; recs.add("Falta RAM (-10)") }
         if (psu == null) { totalScore -= 10; recs.add("Falta Fuente de Poder (-10)") }
         if (gpu == null) { totalScore -= 5; recs.add("Falta GPU (-5)") }
 
-        // PSU Insuficiente (-15)
         if (gpu != null && psu != null) {
             val recPSU = Regex("""\d+""").find(gpu.recommendedPSU ?: gpu.consumptionWatts)?.value?.toIntOrNull() ?: 600
             if (psu.wattage < recPSU) {
@@ -149,7 +129,6 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // Cuello de Botella / Price-Ratios
         if (cpu != null && gpu != null) {
             val ratio = gpu.price / cpu.price
             when {
@@ -160,8 +139,6 @@ class BuildScoreCalculator @Inject constructor(
             }
         }
 
-        // === 4. RESULTADO FINAL ===
-        
         val finalScore = totalScore.toInt().coerceIn(0, 100)
         val label = when {
             finalScore >= 90 -> "🏆 Build de Ensueño"

@@ -31,15 +31,11 @@ class CartViewModel @Inject constructor(
     private val buildScoreCalculator: BuildScoreCalculator,
     private val notificationHelper: NotificationHelper
 ) : ViewModel() {
-
     private val _navigationEvent = MutableSharedFlow<CartNavigationEvent>()
     val navigationEvent = _navigationEvent.asSharedFlow()
-
     private val _snackbarEvent = MutableSharedFlow<String>()
     val snackbarEvent = _snackbarEvent.asSharedFlow()
-
     private val _showOrderConfirmation = MutableStateFlow(false)
-
     val uiState: StateFlow<CartUiState> = combine(
         cartRepository.getCartItems(),
         cartRepository.getCartTotal(),
@@ -91,31 +87,25 @@ class CartViewModel @Inject constructor(
                         _navigationEvent.emit(CartNavigationEvent.NavigateToLogin)
                         return@launch
                     }
-
                     val currentItems = uiState.value.cartItems
                     if (currentItems.isNotEmpty()) {
                         val totalPrice = uiState.value.total
                         val orderComponents = currentItems.flatMap { item -> 
                             List(item.quantity) { item.component } 
                         }
-                        
                         val order = Order(
                             components = orderComponents,
                             totalPrice = totalPrice,
                             date = Date(),
                             status = OrderMode.CREATED
                         )
-                        
                         try {
                             orderRepository.createOrder(order)
                             cartRepository.clearCart()
-                            
                             _showOrderConfirmation.value = true
                             _snackbarEvent.emit("¡Pedido realizado con éxito!")
-                            
                             viewModelScope.launch {
                                 delay(5000)
-                                // Actualización de estado segura
                                 val orders = orderRepository.getAllOrders().first()
                                 if (orders.isNotEmpty()) {
                                     val lastOrder = orders.maxByOrNull { it.id }
@@ -123,7 +113,6 @@ class CartViewModel @Inject constructor(
                                         orderRepository.updateOrder(lastOrder.copy(status = OrderMode.ENVIADO))
                                     }
                                 }
-                                
                                 notificationHelper.sendOrderDeliveredNotification()
                                 _showOrderConfirmation.value = false
                             }

@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -152,7 +153,7 @@ fun OrderDetailBody(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "$${String.format("%.2f", order.totalPrice)}",
+                                    text = order.totalPrice.toPrice(),
                                     style = MaterialTheme.typography.headlineMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.ExtraBold
@@ -207,7 +208,7 @@ fun OrderItemRow(component: Component, quantity: Int) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${component.category} • $${String.format("%.2f", component.price)} c/u",
+                    text = "${component.category} • ${component.price.toPrice()} c/u",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -229,7 +230,7 @@ fun OrderItemRow(component: Component, quantity: Int) {
             Spacer(modifier = Modifier.width(12.dp))
             
             Text(
-                text = "$${String.format("%.2f", component.price * quantity)}",
+                text = (component.price * quantity).toPrice(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.ExtraBold
             )

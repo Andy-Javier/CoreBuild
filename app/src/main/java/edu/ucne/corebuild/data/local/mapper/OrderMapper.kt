@@ -9,7 +9,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.*
 
-// Configuramos el objeto Json para que use el discriminador exacto definido en Component.kt
 private val json = Json { 
     ignoreUnknownKeys = true 
     classDiscriminator = "component_class" 

@@ -2,18 +2,16 @@ package edu.ucne.corebuild.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary (Verde)
-val primaryLight = Color(0xFF316A42) // Verde Oscuro
+val primaryLight = Color(0xFF316A42)
 val onPrimaryLight = Color(0xFFFFFFFF)
-val primaryContainerLight = Color(0xFFB5F1BD) // Tu color solicitado #b5f1bd
+val primaryContainerLight = Color(0xFFB5F1BD)
 val onPrimaryContainerLight = Color(0xFF00210B)
 
-val primaryDark = Color(0xFFB5F1BD) // Tu color solicitado #b5f1bd
+val primaryDark = Color(0xFFB5F1BD)
 val onPrimaryDark = Color(0xFF003919)
 val primaryContainerDark = Color(0xFF16512C)
 val onPrimaryContainerDark = Color(0xFFB5F1BD)
 
-// Secondary
 val secondaryLight = Color(0xFF506352)
 val onSecondaryLight = Color(0xFFFFFFFF)
 val secondaryContainerLight = Color(0xFFD2E8D3)
@@ -24,7 +22,6 @@ val onSecondaryDark = Color(0xFF223426)
 val secondaryContainerDark = Color(0xFF394B3C)
 val onSecondaryContainerDark = Color(0xFFD2E8D3)
 
-// Tertiary
 val tertiaryLight = Color(0xFF3A656E)
 val onTertiaryLight = Color(0xFFFFFFFF)
 val tertiaryContainerLight = Color(0xFFBDEAF5)
@@ -35,7 +32,6 @@ val onTertiaryDark = Color(0xFF01363F)
 val tertiaryContainerDark = Color(0xFF204D56)
 val onTertiaryContainerDark = Color(0xFFBDEAF5)
 
-// Resto de colores del sistema
 val errorLight = Color(0xFFBA1A1A)
 val onErrorLight = Color(0xFFFFFFFF)
 val errorContainerLight = Color(0xFFFFDAD6)
