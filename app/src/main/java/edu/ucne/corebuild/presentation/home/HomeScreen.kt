@@ -2,6 +2,7 @@ package edu.ucne.corebuild.presentation.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -67,7 +68,7 @@ fun HomeScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreenContent(
     state: HomeUiState,
@@ -126,11 +127,19 @@ fun HomeScreenContent(
                 )
             }
 
-            item {
-                CategoryFilter(
-                    selectedCategory = state.selectedCategory,
-                    onCategorySelected = { onEvent(HomeEvent.OnCategoryChange(it)) }
-                )
+            // BARRA DE CATEGORÍAS FIJA CON COLOR DE FONDO UNIFICADO
+            stickyHeader {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background) // Fondo exacto del tema
+                        .padding(bottom = 4.dp)
+                ) {
+                    CategoryFilter(
+                        selectedCategory = state.selectedCategory,
+                        onCategorySelected = { onEvent(HomeEvent.OnCategoryChange(it)) }
+                    )
+                }
             }
 
             if (state.selectedCategory == null && state.searchQuery.isBlank()) {
