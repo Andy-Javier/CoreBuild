@@ -23,11 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -36,6 +34,7 @@ import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.AnimatedFilterChip
 import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 import kotlinx.coroutines.flow.collectLatest
 
@@ -127,12 +126,11 @@ fun HomeScreenContent(
                 )
             }
 
-            // BARRA DE CATEGORÍAS FIJA CON COLOR DE FONDO UNIFICADO
             stickyHeader {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background) // Fondo exacto del tema
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(bottom = 4.dp)
                 ) {
                     CategoryFilter(
@@ -165,7 +163,6 @@ fun HomeScreenContent(
                     }
                 }
             } else {
-                // Inteligencia de Recomendaciones
                 if (state.selectedCategory == null && state.smartRecommendations.isNotEmpty()) {
                     item {
                         AnimatedListItem {
@@ -332,7 +329,7 @@ fun FeaturedBuildCard(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Desde $${String.format("%.2f", build.totalPrice)}",
+                    text = "Desde ${build.totalPrice.toPrice()}",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Bold
@@ -387,7 +384,7 @@ fun FeaturedBuildDialog(
                 ) {
                     Text("Total Build:", fontWeight = FontWeight.Bold)
                     Text(
-                        "$${String.format("%.2f", build.totalPrice)}",
+                        build.totalPrice.toPrice(),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -504,13 +501,7 @@ fun AmazonGridItem(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "$",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = String.format("%.2f", component.price),
+                        text = component.price.toPrice(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -603,7 +594,7 @@ fun ComponentItem(
                     shape = MaterialTheme.shapes.small
                 ) {
                     Text(
-                        text = "$${String.format("%.2f", component.price)}",
+                        text = component.price.toPrice(),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
