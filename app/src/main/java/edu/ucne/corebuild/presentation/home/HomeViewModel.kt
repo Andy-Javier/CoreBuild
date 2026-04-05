@@ -28,16 +28,13 @@ class HomeViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
     private val recommendationEngine: RecommendationEngine
 ) : ViewModel() {
-
     private val _searchQuery = MutableStateFlow("")
     private val _selectedCategory = MutableStateFlow<String?>(null)
     private val _isLoading = MutableStateFlow(false)
     private val _showBuildDialog = MutableStateFlow(false)
     private val _featuredBuild = MutableStateFlow<PredefinedBuild?>(null)
-
     private val _navigationEvent = MutableSharedFlow<HomeNavigationEvent>()
     val navigationEvent = _navigationEvent.asSharedFlow()
-
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val _debouncedQuery = _searchQuery.debounce(300)
 
@@ -51,7 +48,6 @@ class HomeViewModel @Inject constructor(
                 }
         }
     }
-
 
     private val dataFlow = combine(
         getComponentsUseCase(),
@@ -87,7 +83,6 @@ class HomeViewModel @Inject constructor(
         val filtered = data.components.filter { component ->
             val matchesQuery = if (inputs.debouncedQuery.isBlank()) true 
                                else component.name.contains(inputs.debouncedQuery, ignoreCase = true)
-            
             val matchesCategory = when (inputs.category) {
                 null -> true
                 "CPU" -> component.category == "Procesador"
@@ -99,7 +94,6 @@ class HomeViewModel @Inject constructor(
             }
             matchesQuery && matchesCategory
         }
-
         val smartRecommendations = recommendationEngine.recommend(
             allComponents = data.components,
             recentlyViewed = data.recentlyViewed,
@@ -107,12 +101,10 @@ class HomeViewModel @Inject constructor(
             favorites = data.favorites,
             searchQuery = inputs.debouncedQuery
         )
-
         val intel = data.components.filter { it is Component.CPU && it.brand.contains("Intel", ignoreCase = true) }
         val amdCpu = data.components.filter { it is Component.CPU && it.brand.contains("AMD", ignoreCase = true) }
         val nvidia = data.components.filter { it is Component.GPU && (it.brand.contains("NVIDIA", ignoreCase = true) || it.name.contains("RTX", ignoreCase = true) || it.name.contains("GTX", ignoreCase = true)) }
         val radeon = data.components.filter { it is Component.GPU && (it.brand.contains("AMD", ignoreCase = true) || it.brand.contains("Radeon", ignoreCase = true) || it.name.contains("RX ", ignoreCase = true)) }
-
         HomeUiState(
             components = data.components,
             filteredComponents = filtered,
@@ -141,9 +133,7 @@ class HomeViewModel @Inject constructor(
         val mobos = allComponents.filterIsInstance<Component.Motherboard>()
         val rams = allComponents.filterIsInstance<Component.RAM>()
         val psus = allComponents.filterIsInstance<Component.PSU>()
-
         if (cpus.isEmpty() || gpus.isEmpty() || mobos.isEmpty() || rams.isEmpty() || psus.isEmpty()) return
-
         val builds = listOfNotNull(
             createBuild("Master Race Ultra", "Lo mejor de lo mejor para 4K", cpus, gpus, mobos, rams, psus, budget = 4000.0),
             createBuild("Gaming Pro Balanced", "Equilibrio perfecto precio/rendimiento", cpus, gpus, mobos, rams, psus, budget = 2000.0),
@@ -152,7 +142,6 @@ class HomeViewModel @Inject constructor(
             createBuild("Compact Beast", "Potencia masiva en formato pequeño", cpus, gpus, mobos, rams, psus, budget = 2500.0),
             createBuild("Workstation Ready", "Ideal para renderizado y diseño", cpus, gpus, mobos, rams, psus, budget = 3500.0)
         )
-
         if (builds.isNotEmpty()) {
             _featuredBuild.value = builds.random()
         }
@@ -170,23 +159,16 @@ class HomeViewModel @Inject constructor(
     ): PredefinedBuild? {
         val cpu = cpus.filter { it.price <= budget * 0.3 }.maxByOrNull { it.price } ?: cpus.firstOrNull() ?: return null
         val gpu = gpus.filter { it.price <= budget * 0.4 }.maxByOrNull { it.price } ?: gpus.firstOrNull() ?: return null
-        
         val cleanCpuSocket = cpu.socket.replace(" ", "").lowercase()
-        
         val mobo = mobos.filter { 
             it.socket.replace(" ", "").lowercase() == cleanCpuSocket 
         }.minByOrNull { Math.abs(it.price - (budget * 0.15)) } 
-        
         if (mobo == null) return null
-            
         val ram = rams.filter { it.price <= budget * 0.1 }.maxByOrNull { it.price } ?: rams.firstOrNull() ?: return null
-
         val gpuRecWatts = (gpu.recommendedPSU ?: gpu.consumptionWatts).filter { it.isDigit() }.toIntOrNull() ?: 600
         val psu = psus.filter { it.wattage >= gpuRecWatts }
             .minByOrNull { it.wattage } 
-            
         if (psu == null) return null
-
         val buildList = listOf(cpu, gpu, mobo, ram, psu)
         return PredefinedBuild(
             name = name,
@@ -209,7 +191,7 @@ class HomeViewModel @Inject constructor(
                     _showBuildDialog.value = false
                     _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
-                HomeEvent.ResetNavigation -> { /* Managed by SharedFlow */ }
+                HomeEvent.ResetNavigation -> { }
                 HomeEvent.LoadComponents -> { }
             }
         }
@@ -222,7 +204,6 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-// Clases de ayuda para agrupar datos de flujos
 private data class HomeDataGroup(
     val components: List<Component>,
     val recentlyViewed: List<Component>,
