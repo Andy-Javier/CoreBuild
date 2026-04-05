@@ -35,6 +35,7 @@ import edu.ucne.corebuild.domain.smartbuilder.SmartBuild
 import edu.ucne.corebuild.presentation.components.AnimatedFilterChip
 import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
+import edu.ucne.corebuild.presentation.components.toPrice
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @Composable
@@ -362,13 +363,7 @@ fun SmartBuildComponentCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "$",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(bottom = 2.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = String.format("%.2f", component.price),
+                        text = component.price.toPrice(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -560,7 +555,7 @@ fun SmartBuildResult(
                 ) {
                     Text("Total Estimado", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "$${String.format("%.2f", total)}",
+                        total.toPrice(),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -636,7 +631,7 @@ fun ResultItem(
                 )
             }
             Text(
-                "$${component.price}",
+                component.price.toPrice(),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold
             )
@@ -682,7 +677,7 @@ fun SaveBuildDialog(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "$${String.format("%.0f", component.price)}",
+                            text = component.price.toPrice(),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -695,7 +690,7 @@ fun SaveBuildDialog(
                 ) {
                     Text("Total:", fontWeight = FontWeight.Bold)
                     Text(
-                        "$${String.format("%.2f", total)}",
+                        total.toPrice(),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
                     )
