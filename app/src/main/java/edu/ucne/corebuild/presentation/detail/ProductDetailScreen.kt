@@ -295,7 +295,6 @@ fun ProductDetailContent(
                                 }
                             }
 
-                            // Variantes de RAM (Selección de configuración: 2x8, 2x16, etc.)
                             if (state.variants.size > 1 && component is Component.RAM) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 Text(
@@ -426,7 +425,6 @@ fun SpecificComponentDetails(component: Component) {
                     DetailRow("Marca", component.brand)
                     DetailRow("Chipset", component.chipset)
                     DetailRow("VRAM", "${component.vram} ${component.vramType}")
-                    // Limpieza proactiva de la 'W' para evitar duplicados como 'WW'
                     val cleanWatts = component.consumptionWatts.replace("W", "", ignoreCase = true).trim()
                     DetailRow("Consumo", "${cleanWatts}W")
                     component.recommendedPSU?.let {
