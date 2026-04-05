@@ -8,7 +8,7 @@ data class RamDto(
     val marca: String? = null,
     val tipo: String? = null,
     val capacidadTotal: String? = null,
-    val configuracion: String? = null, // Añadido campo de configuración
+    val configuracion: String? = null,
     val velocidad: String? = null,
     val latencia: String? = null,
     val voltaje: String? = null,
@@ -24,7 +24,7 @@ fun RamDto.toDomain(idOverride: Int? = null): Component.RAM {
         brand = marca ?: "",
         type = tipo ?: "",
         capacity = capacidadTotal ?: "",
-        configuration = configuracion ?: "", // Mapeado a la propiedad configuration
+        configuration = configuracion ?: "",
         speed = velocidad ?: "",
         latency = latencia ?: "",
         voltage = voltaje,
