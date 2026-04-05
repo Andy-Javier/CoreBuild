@@ -4,8 +4,8 @@ import edu.ucne.corebuild.domain.model.Component
 
 enum class GamePreset(
     val displayName: String,
-    val fpsAt100pct: Int,   // FPS máximo con el mejor hardware @ 1080p
-    val fpsFloor: Int       // FPS mínimo absoluto con hardware muy débil
+    val fpsAt100pct: Int,
+    val fpsFloor: Int
 ) {
     GTA_V(            "GTA V",                  fpsAt100pct = 300, fpsFloor = 18),
     CYBERPUNK_2077(   "Cyberpunk 2077",          fpsAt100pct = 200, fpsFloor = 8),
@@ -21,11 +21,11 @@ enum class GamePreset(
 
 data class FpsResult(
     val fps: Int,
-    val label: String,      // "Muy fluido" | "Fluido" | "Jugable" | "Limitado" | "No recomendado"
-    val fraction: Float,    // 0f..1f normalizado a 120fps
-    val limitedBy: String,  // "CPU" | "GPU" | "Equilibrado"
-    val cpuContribution: Int,   // porcentaje 0..100 para debug/UI opcional
-    val gpuContribution: Int    // porcentaje 0..100 para debug/UI opcional
+    val label: String,
+    val fraction: Float,
+    val limitedBy: String,
+    val cpuContribution: Int,
+    val gpuContribution: Int
 )
 
 object PerformanceCalculator {
