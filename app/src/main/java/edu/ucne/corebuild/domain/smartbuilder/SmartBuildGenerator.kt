@@ -26,27 +26,21 @@ class SmartBuildGenerator @Inject constructor(
         val suggested = mutableListOf<Component>()
         val warnings = mutableListOf<String>()
 
-        // 1. Select CPU if not provided
         val selectedCpu = anchorCpu ?: selectBalancedCpu(anchorGpu!!, cpus)
         if (anchorCpu == null) suggested.add(selectedCpu)
 
-        // 2. Select GPU if not provided
         val selectedGpu = anchorGpu ?: selectBalancedGpu(selectedCpu, gpus)
         if (anchorGpu == null) suggested.add(selectedGpu)
 
-        // 3. Select Motherboard compatible with CPU
         val selectedMobo = selectCompatibleMotherboard(selectedCpu, motherboards)
         suggested.add(selectedMobo)
 
-        // 4. Select RAM compatible with Motherboard
         val selectedRam = selectCompatibleRam(selectedMobo, rams)
         suggested.add(selectedRam)
 
-        // 5. Select PSU sufficient for CPU + GPU
         val selectedPsu = selectSufficientPsu(selectedCpu, selectedGpu, psus)
         suggested.add(selectedPsu)
 
-        // Bottleneck check
         checkBottleneck(selectedCpu, selectedGpu, warnings)
 
         return SmartBuild(
@@ -58,14 +52,11 @@ class SmartBuildGenerator @Inject constructor(
     }
 
     private fun selectBalancedCpu(gpu: Component.GPU, cpus: List<Component.CPU>): Component.CPU {
-        // GPU price is roughly 40-50% of build, CPU 20-25%
-        // Target CPU price ≈ GPU price * 0.5
         val targetPrice = gpu.price * 0.5
         return cpus.minByOrNull { abs(it.price - targetPrice) } ?: cpus.first()
     }
 
     private fun selectBalancedGpu(cpu: Component.CPU, gpus: List<Component.GPU>): Component.GPU {
-        // Target GPU price ≈ CPU price * 2.0
         val targetPrice = cpu.price * 2.0
         return gpus.minByOrNull { abs(it.price - targetPrice) } ?: gpus.first()
     }
