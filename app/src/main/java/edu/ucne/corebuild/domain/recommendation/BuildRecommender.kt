@@ -10,7 +10,7 @@ class BuildRecommender @Inject constructor(
 ) {
     fun recommendBuild(
         budget: Double,
-        priority: String?, // "CPU" or "GPU"
+        priority: String?,
         allComponents: List<Component>
     ): List<Component> {
         if (allComponents.isEmpty()) return emptyList()
@@ -23,7 +23,6 @@ class BuildRecommender @Inject constructor(
 
         if (cpus.isEmpty() || mobos.isEmpty() || rams.isEmpty() || psus.isEmpty()) return emptyList()
 
-        // 1. Encontrar el build más barato posible (cheapestViableBuild)
         var cheapestViableBuild: List<Component>? = null
         var absoluteMinPrice = Double.MAX_VALUE
 
@@ -39,18 +38,15 @@ class BuildRecommender @Inject constructor(
             }
         }
 
-        // Si ni el build más barato entra en el presupuesto, no podemos recomendar nada
         if (cheapestViableBuild == null || absoluteMinPrice > budget) return emptyList()
 
         var recommendedBuild: List<Component>? = null
 
-        // 2. Lógica de recomendación según prioridad
         if (priority == "GPU" && gpus.isNotEmpty()) {
             for (gpu in gpus.reversed()) {
                 val remaining = budget - gpu.price
                 if (remaining < 0) continue
                 
-                // Iterar CPUs de mejor a peor para encontrar compatibilidad
                 for (cpu in cpus.reversed()) {
                     val essentialsBudget = remaining - cpu.price
                     val essentials = findBestEssentialsForCpu(essentialsBudget, cpu, mobos, rams, psus, gpu)
@@ -91,7 +87,6 @@ class BuildRecommender @Inject constructor(
             }
         }
 
-        // Fallback final: Si nada funcionó, devolver el build más barato garantizado
         val finalResult = recommendedBuild ?: cheapestViableBuild
         return if (finalResult.sumOf { it.price } <= budget) finalResult else cheapestViableBuild
     }
@@ -131,7 +126,6 @@ class BuildRecommender @Inject constructor(
             val psuBudget = remaining - selectedRam.price
             if (psuBudget < 0) continue
             
-            // PSU Estricta: Solo si cumple Watts Y presupuesto
             val selectedPsu = psus.filter { it.wattage >= minWatts && it.price <= psuBudget }.maxByOrNull { it.price }
             
             if (selectedPsu != null) {
