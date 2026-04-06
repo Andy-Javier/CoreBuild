@@ -100,8 +100,13 @@ fun CoreBuildAppContent(
     val currentRoute = navBackStackEntry?.destination?.route
     val authUiState by authViewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+
+    val isAuthScreen = currentRoute?.contains("Login") == true || currentRoute?.contains("Register") == true
+
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = !isAuthScreen,
         drawerContent = {
             ModalDrawerSheet(
                 drawerContainerColor = MaterialTheme.colorScheme.surface,
