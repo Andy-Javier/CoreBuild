@@ -1,5 +1,6 @@
 package edu.ucne.corebuild.data.repository
 
+import android.util.Log
 import edu.ucne.corebuild.data.local.dao.ComponentDao
 import edu.ucne.corebuild.data.local.mapper.toDomain
 import edu.ucne.corebuild.data.local.mapper.toEntity
@@ -7,14 +8,9 @@ import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
 import edu.ucne.corebuild.data.remote.dto.toDomain
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.ComponentRepository
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 class ComponentRepositoryImpl @Inject constructor(
@@ -22,88 +18,89 @@ class ComponentRepositoryImpl @Inject constructor(
     private val remoteDataSource: RemoteDataSource
 ) : ComponentRepository {
 
-    override fun getComponents(): Flow<List<Component>> {
-        return dao.getComponents()
-            .onStart {
-                withContext(Dispatchers.IO) {
-                    refreshAllCategories()
+    override fun getComponents(): Flow<Resource<List<Component>>> = flow {
+        emit(Resource.Loading())
+        
+        remoteDataSource.getCpus()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = dto.toDomain()
+                    val imageUrl = determineCpuImage(domain.name, domain.generation)
+                    domain.copy(imageUrl = imageUrl).toEntity()
                 }
+                dao.insertAll(entities)
             }
-            .map { entities -> entities.map { it.toDomain() } }
-            .flowOn(Dispatchers.IO)
-    }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener CPUs: ${error.message}")
+                emit(Resource.Error(error.message ?: "Error al obtener CPUs desde la API"))
+            }
+
+        remoteDataSource.getGpus()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = dto.toDomain(dto.id + 1000)
+                    val imageUrl = determineGpuImage(domain.name)
+                    domain.copy(imageUrl = imageUrl).toEntity()
+                }
+                dao.insertAll(entities)
+            }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener GPUs: ${error.message}")
+                emit(Resource.Error(error.message ?: "Error al obtener GPUs desde la API"))
+            }
+
+        remoteDataSource.getMotherboards()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = dto.toDomain(dto.id + 2000)
+                    val imageUrl = determineMotherboardImage(domain.name)
+                    domain.copy(imageUrl = imageUrl).toEntity()
+                }
+                dao.insertAll(entities)
+            }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener Motherboards: ${error.message}")
+                emit(Resource.Error(error.message ?: "Error al obtener Motherboards desde la API"))
+            }
+
+        remoteDataSource.getRams()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = dto.toDomain(dto.id + 3000)
+                    val imageUrl = determineRamImage(domain.name)
+                    domain.copy(imageUrl = imageUrl).toEntity()
+                }
+                dao.insertAll(entities)
+            }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener RAMs: ${error.message}")
+                emit(Resource.Error(error.message ?: "Error al obtener RAMs desde la API"))
+            }
+
+        remoteDataSource.getPsus()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = dto.toDomain(dto.id + 4000)
+                    val imageUrl = determinePsuImage(domain.name)
+                    domain.copy(imageUrl = imageUrl).toEntity()
+                }
+                dao.insertAll(entities)
+            }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener PSUs: ${error.message}")
+                emit(Resource.Error(error.message ?: "Error al obtener PSUs desde la API"))
+            }
+
+        emitAll(
+            dao.getComponents()
+                .map { entities -> Resource.Success(entities.map { it.toDomain() }) }
+        )
+    }.flowOn(Dispatchers.IO)
 
     override fun getComponentById(id: Int): Flow<Component?> {
         return dao.getComponentById(id)
             .map { it?.toDomain() }
             .flowOn(Dispatchers.IO)
-    }
-
-    private suspend fun refreshAllCategories() = supervisorScope {
-        launch {
-            try {
-                remoteDataSource.getCpus().getOrNull()?.let { list ->
-                    val entities = list.map { dto ->
-                        val domain = dto.toDomain()
-                        val imageUrl = determineCpuImage(domain.name, domain.generation)
-                        domain.copy(imageUrl = imageUrl).toEntity()
-                    }
-                    dao.insertAll(entities)
-                }
-            } catch (e: Exception) { }
-        }
-
-        launch {
-            try {
-                remoteDataSource.getGpus().getOrNull()?.let { list ->
-                    val entities = list.map { dto ->
-                        val domain = dto.toDomain(dto.id + 1000)
-                        val imageUrl = determineGpuImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
-                    }
-                    dao.insertAll(entities)
-                }
-            } catch (e: Exception) { }
-        }
-
-        launch {
-            try {
-                remoteDataSource.getMotherboards().getOrNull()?.let { list ->
-                    val entities = list.map { dto ->
-                        val domain = dto.toDomain(dto.id + 2000)
-                        val imageUrl = determineMotherboardImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
-                    }
-                    dao.insertAll(entities)
-                }
-            } catch (e: Exception) { }
-        }
-
-        launch {
-            try {
-                remoteDataSource.getRams().getOrNull()?.let { list ->
-                    val entities = list.map { dto ->
-                        val domain = dto.toDomain(dto.id + 3000)
-                        val imageUrl = determineRamImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
-                    }
-                    dao.insertAll(entities)
-                }
-            } catch (e: Exception) { }
-        }
-
-        launch {
-            try {
-                remoteDataSource.getPsus().getOrNull()?.let { list ->
-                    val entities = list.map { dto ->
-                        val domain = dto.toDomain(dto.id + 4000)
-                        val imageUrl = determinePsuImage(domain.name)
-                        domain.copy(imageUrl = imageUrl).toEntity()
-                    }
-                    dao.insertAll(entities)
-                }
-            } catch (e: Exception) { }
-        }
     }
 
     private fun determineCpuImage(name: String, gen: String): String? {
@@ -124,18 +121,12 @@ class ComponentRepositoryImpl @Inject constructor(
 
         if (search.contains("intel") || search.contains("core")) {
             return when {
-                search.contains("ultra") || search.contains("245k") ||
-                        search.contains("265k") || search.contains("285k") -> intelArrowLake
-                search.contains("-14") || search.contains("14th gen") ||
-                        search.contains("14a gen") -> intel14gen
-                search.contains("-13") || search.contains("13th gen") ||
-                        search.contains("13a gen") -> intel13gen
-                search.contains("-12") || search.contains("12th gen") ||
-                        search.contains("12a gen") -> intel12gen
-                search.contains("-11") || search.contains("11th gen") ||
-                        search.contains("11a gen") -> intel11gen
-                search.contains("-10") || search.contains("10th gen") ||
-                        search.contains("10a gen") -> intel10gen
+                search.contains("ultra") || search.contains("245k") || search.contains("265k") || search.contains("285k") -> intelArrowLake
+                search.contains("-14") || search.contains("14th gen") || search.contains("14a gen") -> intel14gen
+                search.contains("-13") || search.contains("13th gen") || search.contains("13a gen") -> intel13gen
+                search.contains("-12") || search.contains("12th gen") || search.contains("12a gen") -> intel12gen
+                search.contains("-11") || search.contains("11th gen") || search.contains("11a gen") -> intel11gen
+                search.contains("-10") || search.contains("10th gen") || search.contains("10a gen") -> intel10gen
                 else -> null
             }
         }
@@ -152,7 +143,6 @@ class ComponentRepositoryImpl @Inject constructor(
                 else -> null
             }
         }
-
         return null
     }
 
@@ -217,21 +207,12 @@ class ComponentRepositoryImpl @Inject constructor(
     private fun determineRamImage(name: String): String? {
         val search = name.lowercase()
         return when {
-            search.contains("vengeance") && search.contains("rgb") &&
-                    (search.contains("3600") || search.contains("pro")) ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789924/imagen_2026-03-29_091202718_yrikxo.png"
-            search.contains("vengeance") && search.contains("lpx") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321782/imagen_2026-04-04_125614615_yyrryx.png"
-            search.contains("ripjaws") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321881/imagen_2026-04-04_125754161_q5zqd0.png"
-            search.contains("fury") && search.contains("beast") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321930/imagen_2026-04-04_125842604_acjqpw.png"
-            search.contains("trident") && search.contains("z5") && search.contains("rgb") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321976/imagen_2026-04-04_125928533_pqfyev.png"
-            search.contains("dominator") && search.contains("platinum") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322029/imagen_2026-04-04_130015179_mcgkxq.png"
-            search.contains("trident") && (search.contains("royal") || search.contains("neo")) ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322093/imagen_2026-04-04_130126082_vylrzh.png"
+            search.contains("vengeance") && search.contains("rgb") -> "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789924/imagen_2026-03-29_091202718_yrikxo.png"
+            search.contains("vengeance") && search.contains("lpx") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321782/imagen_2026-04-04_125614615_yyrryx.png"
+            search.contains("ripjaws") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321881/imagen_2026-04-04_125754161_q5zqd0.png"
+            search.contains("fury") && search.contains("beast") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321930/imagen_2026-04-04_125842604_acjqpw.png"
+            search.contains("trident") && search.contains("z5") && search.contains("rgb") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321976/imagen_2026-04-04_125928533_pqfyev.png"
+            search.contains("dominator") && search.contains("platinum") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322029/imagen_2026-04-04_130015179_mcgkxq.png"
             else -> null
         }
     }
@@ -239,28 +220,16 @@ class ComponentRepositoryImpl @Inject constructor(
     private fun determinePsuImage(name: String): String? {
         val search = name.lowercase()
         return when {
-            search.contains("evga") && search.contains("500") && search.contains("w3") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322689/imagen_2026-04-04_131121363_h728wq.png"
-            search.contains("cooler") && search.contains("master") && search.contains("mwe") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322742/imagen_2026-04-04_131213943_jzy0pz.png"
-            search.contains("corsair") && search.contains("cx") && search.contains("650") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322764/imagen_2026-04-04_131237025_bccaco.png"
-            search.contains("msi") && search.contains("mpg") && search.contains("650") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323138/imagen_2026-04-04_131849921_hvjzsa.png"
-            search.contains("seasonic") && search.contains("focus") && search.contains("750") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323165/imagen_2026-04-04_131917289_em55jw.png"
-            search.contains("corsair") && search.contains("rm") && search.contains("750") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323190/imagen_2026-04-04_131942824_qvigfi.png"
-            search.contains("evga") && search.contains("supernova") && search.contains("850") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323213/imagen_2026-04-04_132005083_f9gjjs.png"
-            search.contains("redragon") && search.contains("850") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322960/imagen_2026-04-04_131411212_lalmd4.png"
-            search.contains("quiet") && search.contains("dark") && search.contains("power") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323310/imagen_2026-04-04_132142547_dz8gen.png"
-            search.contains("corsair") && search.contains("hx") && search.contains("1200") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323536/imagen_2026-04-04_132528173_mnme9z.png"
-            search.contains("rog") && search.contains("thor") && search.contains("850") ->
-                "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789973/imagen_2026-03-29_091253254_ueu1cz.png"
+            search.contains("evga") && search.contains("500") && search.contains("w3") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322689/imagen_2026-04-04_131121363_h728wq.png"
+            search.contains("cooler") && search.contains("master") && search.contains("mwe") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322742/imagen_2026-04-04_131213943_jzy0pz.png"
+            search.contains("corsair") && (search.contains("cx650") || (search.contains("cx") && search.contains("650"))) -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322764/imagen_2026-04-04_131237025_bccaco.png"
+            search.contains("msi") && search.contains("mpg") && search.contains("650") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323138/imagen_2026-04-04_131849921_hvjzsa.png"
+            search.contains("seasonic") && search.contains("focus") && search.contains("750") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323165/imagen_2026-04-04_131917289_em55jw.png"
+            search.contains("corsair") && (search.contains("rm750") || (search.contains("rm") && search.contains("750"))) -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323190/imagen_2026-04-04_131942824_qvigfi.png"
+            search.contains("evga") && search.contains("supernova") && search.contains("850") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323213/imagen_2026-04-04_132005083_f9gjjs.png"
+            search.contains("rog") && search.contains("thor") && search.contains("850") -> "https://res.cloudinary.com/dsnaidobx/image/upload/v1774789973/imagen_2026-03-29_091253254_ueu1cz.png"
+            search.contains("quiet") && search.contains("dark") && search.contains("power") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323310/imagen_2026-04-04_132142547_dz8gen.png"
+            search.contains("corsair") && (search.contains("hx1200") || (search.contains("hx") && search.contains("1200"))) -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775323536/imagen_2026-04-04_132528173_mnme9z.png"
             else -> null
         }
     }

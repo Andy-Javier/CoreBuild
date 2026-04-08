@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -24,14 +25,23 @@ class SearchViewModel @Inject constructor(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-        val componentsFlow = getComponentsUseCase()
+        getComponentsUseCase().onEach { result ->
+            when (result) {
+                is Resource.Loading -> _uiState.update { it.copy(isLoading = true) }
+                is Resource.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Resource.Success -> {
+                    val components = result.data ?: emptyList()
+                    _uiState.update { it.copy(isLoading = false, components = components) }
+                }
+            }
+        }.launchIn(viewModelScope)
 
         combine(
             _query.debounce(300),
             _selectedCategories,
             _selectedBrands,
             _priceRange,
-            componentsFlow
+            _uiState.map { it.components }.distinctUntilChanged()
         ) { query, categories, brands, priceRange, components ->
             val filtered = components.filter { component ->
                 val matchesQuery = query.isBlank() || component.name.contains(query, ignoreCase = true)
@@ -64,19 +74,18 @@ class SearchViewModel @Inject constructor(
                 }
             }.distinct()
 
-            SearchUiState(
-                query = query,
-                components = components,
-                filteredComponents = filtered,
-                selectedCategories = categories,
-                selectedBrands = brands,
-                minPrice = priceRange.first,
-                maxPrice = priceRange.second,
-                availableCategories = availableCategories,
-                availableBrands = availableBrands
-            )
-        }.onEach { state ->
-            _uiState.update { state }
+            _uiState.update {
+                it.copy(
+                    query = query,
+                    filteredComponents = filtered,
+                    selectedCategories = categories,
+                    selectedBrands = brands,
+                    minPrice = priceRange.first,
+                    maxPrice = priceRange.second,
+                    availableCategories = availableCategories,
+                    availableBrands = availableBrands
+                )
+            }
         }.launchIn(viewModelScope)
     }
 

@@ -8,6 +8,7 @@ import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuild
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,7 +23,9 @@ data class SmartBuildFormState(
     val selectedCpu: Component.CPU? = null,
     val selectedGpu: Component.GPU? = null,
     val cpus: List<Component.CPU> = emptyList(),
-    val gpus: List<Component.GPU> = emptyList()
+    val gpus: List<Component.GPU> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
 ) {
     val isReadyToBuild: Boolean get() =
         (cpuModeEnabled && selectedCpu != null) ||
@@ -86,7 +89,6 @@ class SmartBuildViewModel @Inject constructor(
     private val _gpuSearchQuery = MutableStateFlow("")
     val gpuSearchQuery: StateFlow<String> = _gpuSearchQuery.asStateFlow()
 
-    // true = mostrar el diálogo de confirmación de guardar
     private val _showSaveDialog = MutableStateFlow(false)
     val showSaveDialog: StateFlow<Boolean> = _showSaveDialog.asStateFlow()
 
@@ -111,12 +113,22 @@ class SmartBuildViewModel @Inject constructor(
 
     private fun loadComponents() {
         viewModelScope.launch {
-            getComponentsUseCase().collect { components ->
-                _formState.update { state ->
-                    state.copy(
-                        cpus = components.filterIsInstance<Component.CPU>(),
-                        gpus = components.filterIsInstance<Component.GPU>()
-                    )
+            getComponentsUseCase().collect { result ->
+                when (result) {
+                    is Resource.Loading -> _formState.update { it.copy(isLoading = true) }
+                    is Resource.Success -> {
+                        val components = result.data ?: emptyList()
+                        _formState.update { state ->
+                            state.copy(
+                                isLoading = false,
+                                cpus = components.filterIsInstance<Component.CPU>(),
+                                gpus = components.filterIsInstance<Component.GPU>()
+                            )
+                        }
+                    }
+                    is Resource.Error -> {
+                        _formState.update { it.copy(isLoading = false, error = result.message) }
+                    }
                 }
             }
         }
@@ -145,16 +157,18 @@ class SmartBuildViewModel @Inject constructor(
         if (!state.isReadyToBuild) return
         viewModelScope.launch {
             _uiState.value = SmartBuildUiState.Loading
-            try {
-                val allComponents = getComponentsUseCase().first()
-                val result = smartBuildGenerator.generateBuild(
-                    anchorCpu = if (state.cpuModeEnabled) state.selectedCpu else null,
-                    anchorGpu = if (state.gpuModeEnabled) state.selectedGpu else null,
-                    allComponents = allComponents
-                )
-                _uiState.value = SmartBuildUiState.Success(result)
-            } catch (e: Exception) {
-                _uiState.value = SmartBuildUiState.Error(e.message ?: "Ocurrió un error desconocido")
+            getComponentsUseCase().collect { result ->
+                if (result is Resource.Success) {
+                    val allComponents = result.data ?: emptyList()
+                    val buildResult = smartBuildGenerator.generateBuild(
+                        anchorCpu = if (state.cpuModeEnabled) state.selectedCpu else null,
+                        anchorGpu = if (state.gpuModeEnabled) state.selectedGpu else null,
+                        allComponents = allComponents
+                    )
+                    _uiState.value = SmartBuildUiState.Success(buildResult)
+                } else if (result is Resource.Error) {
+                    _uiState.value = SmartBuildUiState.Error(result.message ?: "Error al cargar componentes")
+                }
             }
         }
     }

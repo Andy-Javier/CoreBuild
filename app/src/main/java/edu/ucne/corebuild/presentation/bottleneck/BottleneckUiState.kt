@@ -10,5 +10,6 @@ data class BottleneckUiState(
     val selectedResolution: String = "1080p", // "1080p", "1440p", "4K"
     val bottleneckPercentage: Double = 0.0,
     val status: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val error: String? = null
 )

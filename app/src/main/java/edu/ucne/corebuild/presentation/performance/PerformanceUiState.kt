@@ -14,7 +14,8 @@ data class PerformanceUiState(
     val selectedGame: GamePreset = GamePreset.GTA_V,
     val selectedResolution: String = "1080p",
     val fpsResult: FpsResult? = null,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 sealed interface PerformanceEvent {
