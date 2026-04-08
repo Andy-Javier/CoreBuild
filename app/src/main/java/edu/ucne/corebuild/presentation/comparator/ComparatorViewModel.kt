@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,15 +27,23 @@ class ComparatorViewModel @Inject constructor(
 
     private fun loadComponents() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            getComponentsUseCase().collect { components ->
-                _uiState.update { 
-                    it.copy(
-                        components = components,
-                        isLoading = false
-                    )
+            getComponentsUseCase().collect { result ->
+                when (result) {
+                    is Resource.Loading -> _uiState.update { it.copy(isLoading = true) }
+                    is Resource.Success -> {
+                        val components = result.data ?: emptyList()
+                        _uiState.update { 
+                            it.copy(
+                                components = components,
+                                isLoading = false
+                            )
+                        }
+                        updateFilteredComponents(_uiState.value.selectedType)
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
                 }
-                updateFilteredComponents(_uiState.value.selectedType)
             }
         }
     }

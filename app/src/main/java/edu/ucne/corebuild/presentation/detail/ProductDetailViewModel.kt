@@ -13,6 +13,7 @@ import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -33,6 +34,7 @@ class ProductDetailViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     private val _orderCompleted = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val _component = _componentId.filterNotNull().flatMapLatest { id ->
@@ -50,9 +52,14 @@ class ProductDetailViewModel @Inject constructor(
     private val _variants = _component.filterNotNull().flatMapLatest { component ->
         if (component is Component.RAM) {
             val baseName = extractBaseRamName(component.name)
-            getComponentsUseCase().map { all ->
-                all.filterIsInstance<Component.RAM>().filter { 
-                    extractBaseRamName(it.name) == baseName 
+            getComponentsUseCase().map { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        result.data?.filterIsInstance<Component.RAM>()?.filter { 
+                            extractBaseRamName(it.name) == baseName 
+                        } ?: emptyList()
+                    }
+                    else -> emptyList()
                 }
             }
         } else {
@@ -60,8 +67,8 @@ class ProductDetailViewModel @Inject constructor(
         }
     }
 
-    private val _operationState = combine(_isLoading, _snackbarMessage, _orderCompleted) { loading, msg, completed ->
-        Triple(loading, msg, completed)
+    private val _operationState = combine(_isLoading, _snackbarMessage, _orderCompleted, _error) { loading, msg, completed, error ->
+        loading to (msg to (completed to error))
     }
 
     val uiState: StateFlow<ProductDetailUiState> = combine(
@@ -70,8 +77,11 @@ class ProductDetailViewModel @Inject constructor(
         _operationState,
         cartRepository.getCartItems(),
         _variants
-    ) { component, isFav, opState, cartItems, variants ->
-        val (loading, message, completed) = opState
+    ) { component, isFav, op, cartItems, variants ->
+        val (loading, nested) = op
+        val (message, last) = nested
+        val (completed, error) = last
+        
         val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 3
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
         
@@ -81,6 +91,7 @@ class ProductDetailViewModel @Inject constructor(
             isFavorite = isFav,
             isLoading = loading,
             snackbarMessage = message,
+            error = error,
             quantityLimit = limit,
             currentInCart = currentInCart,
             orderCompleted = completed
@@ -90,6 +101,21 @@ class ProductDetailViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ProductDetailUiState(isLoading = true)
     )
+
+    init {
+        viewModelScope.launch {
+            getComponentsUseCase().collect { result ->
+                when (result) {
+                    is Resource.Loading -> _isLoading.value = true
+                    is Resource.Success -> _isLoading.value = false
+                    is Resource.Error -> {
+                        _isLoading.value = false
+                        _error.value = result.message
+                    }
+                }
+            }
+        }
+    }
 
     private fun extractBaseRamName(name: String): String {
         val configPatterns = listOf(

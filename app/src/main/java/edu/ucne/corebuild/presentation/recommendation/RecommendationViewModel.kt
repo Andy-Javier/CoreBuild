@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.recommendation.BuildRecommender
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,8 +25,20 @@ class RecommendationViewModel @Inject constructor(
 
     private fun loadComponents() {
         viewModelScope.launch {
-            getComponentsUseCase().collect { components ->
-                _uiState.update { it.copy(allComponents = components) }
+            getComponentsUseCase().collect { result ->
+                when (result) {
+                    is Resource.Loading -> _uiState.update { it.copy(isLoading = true) }
+                    is Resource.Success -> {
+                        _uiState.update { 
+                            it.copy(isLoading = false, allComponents = result.data ?: emptyList()) 
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { 
+                            it.copy(isLoading = false, error = result.message) 
+                        }
+                    }
+                }
             }
         }
     }

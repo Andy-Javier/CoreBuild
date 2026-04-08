@@ -11,6 +11,7 @@ import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
+import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,12 +41,15 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            getComponentsUseCase()
-                .filter { it.isNotEmpty() }
-                .firstOrNull()
-                ?.let { components ->
-                    generateRandomBuild(components)
+            getComponentsUseCase().collect { result ->
+                if (result is Resource.Success) {
+                    result.data?.let { components ->
+                        if (components.isNotEmpty()) {
+                            generateRandomBuild(components)
+                        }
+                    }
                 }
+            }
         }
     }
 
@@ -55,8 +59,15 @@ class HomeViewModel @Inject constructor(
         statsRepository.getTopRated(),
         favoriteRepository.getFavoriteComponents(),
         cartRepository.getCartItems()
-    ) { components, recently, top, favorites, cart ->
-        HomeDataGroup(components, recently, top, favorites, cart)
+    ) { componentsRes, recently, top, favorites, cart ->
+        HomeDataGroup(
+            components = if (componentsRes is Resource.Success) componentsRes.data ?: emptyList() else emptyList(),
+            recentlyViewed = recently,
+            topRated = top,
+            favorites = favorites,
+            cartItems = cart,
+            isLoading = componentsRes is Resource.Loading
+        )
     }
 
     private val inputFlow = combine(
@@ -116,7 +127,7 @@ class HomeViewModel @Inject constructor(
             radeonComponents = radeon,
             searchQuery = inputs.query,
             selectedCategory = inputs.category,
-            isLoading = ui.isLoading,
+            isLoading = data.isLoading || ui.isLoading,
             featuredBuild = ui.featuredBuild,
             showBuildDialog = ui.showBuildDialog,
             smartRecommendations = smartRecommendations
@@ -209,7 +220,8 @@ private data class HomeDataGroup(
     val recentlyViewed: List<Component>,
     val topRated: List<Component>,
     val favorites: List<Component>,
-    val cartItems: List<CartItem>
+    val cartItems: List<CartItem>,
+    val isLoading: Boolean
 )
 
 private data class HomeInputGroup(
@@ -223,3 +235,6 @@ private data class HomeUiLayersGroup(
     val featuredBuild: PredefinedBuild?,
     val showBuildDialog: Boolean
 )
+
+private fun <T1, T2, T3, T4, T5> quintuple(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5): Quintuple<T1, T2, T3, T4, T5> = Quintuple(t1, t2, t3, t4, t5)
+data class Quintuple<out T1, out T2, out T3, out T4, out T5>(val first: T1, val second: T2, val third: T3, val fourth: T4, val fifth: T5)

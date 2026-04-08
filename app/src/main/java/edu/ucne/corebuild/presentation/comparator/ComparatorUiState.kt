@@ -8,5 +8,6 @@ data class ComparatorUiState(
     val selectedType: String = "CPU", // "CPU" or "GPU"
     val selectedComponent1: Component? = null,
     val selectedComponent2: Component? = null,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
