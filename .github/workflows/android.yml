@@ -1,4 +1,4 @@
-name: Android CI - Signed APK
+name: Android CI
 
 on:
   push:
@@ -23,20 +23,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > app/corebuild.jks
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
 
-      - name: Build signed release APK
-        run: ./gradlew assembleRelease
-        env:
-          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-
-      - name: Upload signed APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: CoreBuild-release-signed
-          path: app/build/outputs/apk/release/app-release.apk
-          retention-days: 14
+          name: CoreBuild-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
