@@ -5,7 +5,7 @@ import edu.ucne.corebuild.data.local.dao.ComponentDao
 import edu.ucne.corebuild.data.local.mapper.toDomain
 import edu.ucne.corebuild.data.local.mapper.toEntity
 import edu.ucne.corebuild.data.remote.datasource.RemoteDataSource
-import edu.ucne.corebuild.data.remote.dto.toDomain
+import edu.ucne.corebuild.data.remote.dto.*
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.util.Resource
@@ -213,6 +213,7 @@ class ComponentRepositoryImpl @Inject constructor(
             search.contains("fury") && search.contains("beast") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321930/imagen_2026-04-04_125842604_acjqpw.png"
             search.contains("trident") && search.contains("z5") && search.contains("rgb") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775321976/imagen_2026-04-04_125928533_pqfyev.png"
             search.contains("dominator") && search.contains("platinum") -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322029/imagen_2026-04-04_130015179_mcgkxq.png"
+            search.contains("trident") && (search.contains("royal") || search.contains("neo")) -> "https://res.cloudinary.com/dsnaidobx/image/upload/q_auto/f_auto/v1775322093/imagen_2026-04-04_130126082_vylrzh.png"
             else -> null
         }
     }
