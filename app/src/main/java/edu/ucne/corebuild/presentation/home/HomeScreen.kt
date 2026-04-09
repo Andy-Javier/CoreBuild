@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,6 +48,11 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    DisposableEffect(Unit) {
+        viewModel.onScreenEnter()
+        onDispose { viewModel.onScreenExit() }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collectLatest { event ->
             when (event) {
@@ -59,7 +65,7 @@ fun HomeScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onComponentClick = { id ->
-            viewModel.recordComponentClick(id)
+            viewModel.onEvent(HomeEvent.OnComponentClick(id))
             onComponentClick(id)
         },
         onCartClick = onCartClick,
@@ -371,7 +377,7 @@ fun FeaturedBuildDialog(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "$${String.format("%.0f", component.price)}",
+                            text = component.price.toPrice(),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -498,8 +504,33 @@ fun AmazonGridItem(
                     fontWeight = FontWeight.Medium,
                     minLines = 2
                 )
+                
+                if (component is Component.RAM && component.configuration.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = component.configuration,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
+                    if (component is Component.RAM) {
+                        Text(
+                            text = "Desde ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Text(
                         text = component.price.toPrice(),
                         style = MaterialTheme.typography.titleMedium,
