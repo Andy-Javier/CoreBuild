@@ -10,6 +10,7 @@ import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
+import edu.ucne.corebuild.domain.tracking.UserInteractionTracker
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import edu.ucne.corebuild.util.Resource
 import kotlinx.coroutines.flow.*
@@ -27,7 +28,8 @@ class HomeViewModel @Inject constructor(
     private val statsRepository: StatsRepository,
     private val cartRepository: CartRepository,
     private val favoriteRepository: FavoriteRepository,
-    private val recommendationEngine: RecommendationEngine
+    private val recommendationEngine: RecommendationEngine,
+    private val tracker: UserInteractionTracker
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     private val _selectedCategory = MutableStateFlow<String?>(null)
@@ -38,6 +40,8 @@ class HomeViewModel @Inject constructor(
     val navigationEvent = _navigationEvent.asSharedFlow()
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val _debouncedQuery = _searchQuery.debounce(300)
+
+    private var screenEntryTime = 0L
 
     init {
         viewModelScope.launch {
@@ -51,6 +55,50 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onScreenEnter() {
+        screenEntryTime = System.currentTimeMillis()
+    }
+
+    fun onScreenExit() {
+        val seconds = (System.currentTimeMillis() - screenEntryTime) / 1000
+        if (seconds >= 10) {
+            viewModelScope.launch {
+                uiState.value.smartRecommendations
+                    .take(3)
+                    .forEach { tracker.trackView(it.id) }
+            }
+        }
+    }
+
+    private fun extractBaseRamName(name: String): String {
+        val configPatterns = listOf(
+            Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
+            Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
+        )
+        var baseName = name
+        for (pattern in configPatterns) {
+            val match = pattern.find(baseName)
+            if (match != null) {
+                baseName = baseName.substring(0, match.range.first).trim()
+                break
+            }
+        }
+        return baseName
+    }
+
+    private fun groupRamsByModel(components: List<Component>): List<Component> {
+        val rams = components.filterIsInstance<Component.RAM>()
+        val nonRams = components.filter { it !is Component.RAM }
+
+        val grouped = rams
+            .groupBy { extractBaseRamName(it.name) }
+            .map { (_, variants) ->
+                variants.minByOrNull { it.price } ?: variants.first()
+            }
+
+        return nonRams + grouped
     }
 
     private val dataFlow = combine(
@@ -91,7 +139,7 @@ class HomeViewModel @Inject constructor(
         inputFlow,
         uiLayersFlow
     ) { data, inputs, ui ->
-        val filtered = data.components.filter { component ->
+        val allFiltered = data.components.filter { component ->
             val matchesQuery = if (inputs.debouncedQuery.isBlank()) true 
                                else component.name.contains(inputs.debouncedQuery, ignoreCase = true)
             val matchesCategory = when (inputs.category) {
@@ -105,17 +153,22 @@ class HomeViewModel @Inject constructor(
             }
             matchesQuery && matchesCategory
         }
+        val filtered = groupRamsByModel(allFiltered)
+
+        val groupedComponents = groupRamsByModel(data.components)
         val smartRecommendations = recommendationEngine.recommend(
-            allComponents = data.components,
+            allComponents = groupedComponents,
             recentlyViewed = data.recentlyViewed,
             cartItems = data.cartItems.map { it.component },
             favorites = data.favorites,
             searchQuery = inputs.debouncedQuery
         )
+
         val intel = data.components.filter { it is Component.CPU && it.brand.contains("Intel", ignoreCase = true) }
         val amdCpu = data.components.filter { it is Component.CPU && it.brand.contains("AMD", ignoreCase = true) }
         val nvidia = data.components.filter { it is Component.GPU && (it.brand.contains("NVIDIA", ignoreCase = true) || it.name.contains("RTX", ignoreCase = true) || it.name.contains("GTX", ignoreCase = true)) }
         val radeon = data.components.filter { it is Component.GPU && (it.brand.contains("AMD", ignoreCase = true) || it.brand.contains("Radeon", ignoreCase = true) || it.name.contains("RX ", ignoreCase = true)) }
+        
         HomeUiState(
             components = data.components,
             filteredComponents = filtered,
@@ -198,19 +251,23 @@ class HomeViewModel @Inject constructor(
                 HomeEvent.OnAddFeaturedToCart -> {
                     _featuredBuild.value?.components?.forEach { component ->
                         cartRepository.addComponent(component)
+                        tracker.trackAddToCart(component.id)
                     }
                     _showBuildDialog.value = false
                     _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
                 HomeEvent.ResetNavigation -> { }
                 HomeEvent.LoadComponents -> { }
+                is HomeEvent.OnComponentClick -> {
+                    tracker.trackView(event.id)
+                }
             }
         }
     }
 
     fun recordComponentClick(id: Int) {
         viewModelScope.launch {
-            statsRepository.recordView(id)
+            tracker.trackView(id)
         }
     }
 }
