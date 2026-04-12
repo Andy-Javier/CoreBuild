@@ -7,4 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface ComponentRepository {
     fun getComponents(): Flow<Resource<List<Component>>>
     fun getComponentById(id: Int): Flow<Component?>
+    suspend fun addComponent(component: Component): Result<Unit>
+    suspend fun updateComponent(component: Component): Result<Unit>
+    suspend fun deleteComponent(id: Int, type: String): Result<Unit>
 }
