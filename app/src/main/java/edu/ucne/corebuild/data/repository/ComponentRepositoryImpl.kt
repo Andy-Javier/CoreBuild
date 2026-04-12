@@ -20,82 +20,70 @@ class ComponentRepositoryImpl @Inject constructor(
 
     override fun getComponents(): Flow<Resource<List<Component>>> = flow {
         emit(Resource.Loading())
-        
-        remoteDataSource.getCpus()
-            .onSuccess { list ->
-                val entities = list.map { dto ->
-                    val domain = dto.toDomain()
-                    val imageUrl = determineCpuImage(domain)
-                    domain.copy(imageUrl = imageUrl).toEntity()
-                }
-                dao.insertAll(entities)
-            }
-            .onFailure { error ->
-                Log.e("ComponentRepository", "Error al obtener CPUs: ${error.message}")
-                emit(Resource.Error(error.message ?: "Error al obtener CPUs desde la API"))
-            }
 
-        remoteDataSource.getGpus()
-            .onSuccess { list ->
-                val entities = list.map { dto ->
-                    val domain = dto.toDomain(dto.id + 1000)
-                    val imageUrl = determineGpuImage(domain.name)
-                    domain.copy(imageUrl = imageUrl).toEntity()
-                }
-                dao.insertAll(entities)
-            }
-            .onFailure { error ->
-                Log.e("ComponentRepository", "Error al obtener GPUs: ${error.message}")
-                emit(Resource.Error(error.message ?: "Error al obtener GPUs desde la API"))
-            }
+        syncComponents(
+            fetcher = { remoteDataSource.getCpus() },
+            mapper = { it.toDomain() },
+            imageDeterminer = { domain ->
+                if (domain is Component.CPU) determineCpuImage(domain.name, domain.generation) else null
+            },
+            errorLabel = "CPUs"
+        )
 
-        remoteDataSource.getMotherboards()
-            .onSuccess { list ->
-                val entities = list.map { dto ->
-                    val domain = dto.toDomain(dto.id + 2000)
-                    val imageUrl = determineMotherboardImage(domain.name)
-                    domain.copy(imageUrl = imageUrl).toEntity()
-                }
-                dao.insertAll(entities)
-            }
-            .onFailure { error ->
-                Log.e("ComponentRepository", "Error al obtener Motherboards: ${error.message}")
-                emit(Resource.Error(error.message ?: "Error al obtener Motherboards desde la API"))
-            }
+        syncComponents(
+            fetcher = { remoteDataSource.getGpus() },
+            mapper = { it.toDomain(it.id + 1000) },
+            imageDeterminer = { determineGpuImage(it.name) },
+            errorLabel = "GPUs"
+        )
 
-        remoteDataSource.getRams()
-            .onSuccess { list ->
-                val entities = list.map { dto ->
-                    val domain = dto.toDomain(dto.id + 3000)
-                    val imageUrl = determineRamImage(domain.name)
-                    domain.copy(imageUrl = imageUrl).toEntity()
-                }
-                dao.insertAll(entities)
-            }
-            .onFailure { error ->
-                Log.e("ComponentRepository", "Error al obtener RAMs: ${error.message}")
-                emit(Resource.Error(error.message ?: "Error al obtener RAMs desde la API"))
-            }
+        syncComponents(
+            fetcher = { remoteDataSource.getMotherboards() },
+            mapper = { it.toDomain(it.id + 2000) },
+            imageDeterminer = { determineMotherboardImage(it.name) },
+            errorLabel = "Motherboards"
+        )
 
-        remoteDataSource.getPsus()
-            .onSuccess { list ->
-                val entities = list.map { dto ->
-                    val domain = dto.toDomain(dto.id + 4000)
-                    val imageUrl = determinePsuImage(domain.name)
-                    domain.copy(imageUrl = imageUrl).toEntity()
-                }
-                dao.insertAll(entities)
-            }
-            .onFailure { error ->
-                Log.e("ComponentRepository", "Error al obtener PSUs: ${error.message}")
-                emit(Resource.Error(error.message ?: "Error al obtener PSUs desde la API"))
-            }
+        syncComponents(
+            fetcher = { remoteDataSource.getRams() },
+            mapper = { it.toDomain(it.id + 3000) },
+            imageDeterminer = { determineRamImage(it.name) },
+            errorLabel = "RAMs"
+        )
+
+        syncComponents(
+            fetcher = { remoteDataSource.getPsus() },
+            mapper = { it.toDomain(it.id + 4000) },
+            imageDeterminer = { determinePsuImage(it.name) },
+            errorLabel = "PSUs"
+        )
 
         emitAll(
             dao.getComponents()
                 .map { entities -> Resource.Success(entities.map { it.toDomain() }) }
         )
     }.flowOn(Dispatchers.IO)
+
+    private suspend fun <T> FlowCollector<Resource<List<Component>>>.syncComponents(
+        fetcher: suspend () -> Result<List<T>>,
+        mapper: (T) -> Component,
+        imageDeterminer: (Component) -> String?,
+        errorLabel: String
+    ) {
+        fetcher()
+            .onSuccess { list ->
+                val entities = list.map { dto ->
+                    val domain = mapper(dto)
+                    val imageUrl = imageDeterminer(domain)
+                    domain.withImageUrl(imageUrl).toEntity()
+                }
+                dao.insertAll(entities)
+            }
+            .onFailure { error ->
+                Log.e("ComponentRepository", "Error al obtener $errorLabel", error)
+                emit(Resource.Error("No se pudo sincronizar $errorLabel: ${error.localizedMessage}"))
+            }
+    }
 
     override fun getComponentById(id: Int): Flow<Component?> {
         return dao.getComponentById(id)
@@ -104,36 +92,28 @@ class ComponentRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addComponent(component: Component): Result<Unit> = runCatching {
-        val response = when (component) {
+        val result = when (component) {
             is Component.CPU -> remoteDataSource.createCpu(component.toDto())
             is Component.GPU -> remoteDataSource.createGpu(component.toDto())
             is Component.Motherboard -> remoteDataSource.createMotherboard(component.toDto())
             is Component.RAM -> remoteDataSource.createRam(component.toDto())
             is Component.PSU -> remoteDataSource.createPsu(component.toDto())
         }
-        
-        response.onSuccess { dto ->
-            val domain = when (dto) {
-                is CpuDto -> dto.toDomain()
-                is GpuDto -> dto.toDomain(dto.id + 1000)
-                is MotherboardDto -> dto.toDomain(dto.id + 2000)
-                is RamDto -> dto.toDomain(dto.id + 3000)
-                is PsuDto -> dto.toDomain(dto.id + 4000)
-                else -> throw IllegalStateException("Respuesta inesperada")
-            }
-            dao.insertAll(listOf(domain.toEntity()))
-        }.onFailure { throw it }
+        handleComponentResponse(result)
     }
 
     override suspend fun updateComponent(component: Component): Result<Unit> = runCatching {
-        val response = when (component) {
+        val result = when (component) {
             is Component.CPU -> remoteDataSource.updateCpu(component.id, component.toDto())
             is Component.GPU -> remoteDataSource.updateGpu(component.id - 1000, component.toDto())
             is Component.Motherboard -> remoteDataSource.updateMotherboard(component.id - 2000, component.toDto())
             is Component.RAM -> remoteDataSource.updateRam(component.id - 3000, component.toDto())
             is Component.PSU -> remoteDataSource.updatePsu(component.id - 4000, component.toDto())
         }
+        handleComponentResponse(result)
+    }
 
+    private suspend fun handleComponentResponse(response: Result<Any>) {
         response.onSuccess { dto ->
             val domain = when (dto) {
                 is CpuDto -> dto.toDomain()
@@ -141,7 +121,7 @@ class ComponentRepositoryImpl @Inject constructor(
                 is MotherboardDto -> dto.toDomain(dto.id + 2000)
                 is RamDto -> dto.toDomain(dto.id + 3000)
                 is PsuDto -> dto.toDomain(dto.id + 4000)
-                else -> throw IllegalStateException("Respuesta inesperada")
+                else -> throw IllegalStateException("Tipo de DTO desconocido")
             }
             dao.insertAll(listOf(domain.toEntity()))
         }.onFailure { throw it }
@@ -154,13 +134,15 @@ class ComponentRepositoryImpl @Inject constructor(
             "placa base", "motherboard" -> remoteDataSource.deleteMotherboard(id - 2000)
             "memoria ram", "ram" -> remoteDataSource.deleteRam(id - 3000)
             "fuente de poder", "psu" -> remoteDataSource.deletePsu(id - 4000)
-            else -> throw IllegalArgumentException("Tipo de componente no soportado: $type")
+            else -> throw IllegalArgumentException("Tipo no soportado: $type")
         }
 
         response.onSuccess {
             dao.deleteById(id)
         }.onFailure { throw it }
     }
+
+    private fun String.cleanInt() = this.filter { it.isDigit() }.toIntOrNull()
 
     private fun Component.CPU.toDto() = CpuDto(
         id = this.id,
@@ -172,7 +154,7 @@ class ComponentRepositoryImpl @Inject constructor(
         hilos = this.threads,
         frecuenciaBase = this.baseClock,
         frecuenciaTurbo = this.boostClock,
-        tdpWatts = this.tdp.replace("W", "").trim().toIntOrNull(),
+        tdpWatts = this.tdp.cleanInt(),
         precioUsd = this.price,
         descripcion = this.description,
         imageUrl = this.imageUrl
@@ -187,7 +169,7 @@ class ComponentRepositoryImpl @Inject constructor(
         tipoVram = this.vramType,
         frecuenciaBase = this.baseClock,
         frecuenciaBoost = this.boostClock,
-        consumoWatts = this.consumptionWatts.replace("W", "").trim().toIntOrNull(),
+        consumoWatts = this.consumptionWatts.cleanInt(),
         precioUsd = this.price,
         descripcion = this.description,
         imageUrl = this.imageUrl
@@ -237,43 +219,44 @@ class ComponentRepositoryImpl @Inject constructor(
         imageUrl = this.imageUrl
     )
 
-    private fun determineCpuImage(cpu: Component.CPU): String? {
-        val search = "${cpu.name} ${cpu.generation}".lowercase()
-        val nameOnly = cpu.name.lowercase()
+    private fun determineCpuImage(name: String, generation: String): String? {
+        val search = "$name $generation".lowercase()
+        val nameOnly = name.lowercase()
 
-        val amd3000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_3000_l7gbgt.jpg"
-        val amd4000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741851/Ryzen_4000_isyqkf.png"
-        val amd5000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741841/Ryzen_5000_waljfw.jpg"
-        val amd7000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741951/Ryzen_7000_flhzjd.jpg"
-        val amd9000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_9000_pwufy0.jpg"
-        val intelArrowLake = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774743251/imagen_2026-03-28_201410763_ex7ktj.png"
-        val intel14gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746616/imagen_2026-03-28_211015385_lx6ngi.png"
-        val intel13gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746606/imagen_2026-03-28_211005856_wlezyh.png"
-        val intel12gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746551/imagen_2026-03-28_210908927_dep24d.png"
-        val intel11gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746405/imagen_2026-03-28_210642931_csxqqh.png"
-        val intel10gen = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774745942/imagen_2026-03-28_205900911_jizp1k.png"
+        val images = mapOf(
+            "ryzen_3000" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_3000_l7gbgt.jpg",
+            "ryzen_4000" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741851/Ryzen_4000_isyqkf.png",
+            "ryzen_5000" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741841/Ryzen_5000_waljfw.jpg",
+            "ryzen_7000" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741951/Ryzen_7000_flhzjd.jpg",
+            "ryzen_9000" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_9000_pwufy0.jpg",
+            "intel_arrow" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774743251/imagen_2026-03-28_201410763_ex7ktj.png",
+            "intel_14" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746616/imagen_2026-03-28_211015385_lx6ngi.png",
+            "intel_13" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746606/imagen_2026-03-28_211005856_wlezyh.png",
+            "intel_12" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746551/imagen_2026-03-28_210908927_dep24d.png",
+            "intel_11" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774746405/imagen_2026-03-28_210642931_csxqqh.png",
+            "intel_10" to "https://res.cloudinary.com/dsnaidobx/image/upload/v1774745942/imagen_2026-03-28_205900911_jizp1k.png"
+        )
 
         if (search.contains("intel") || search.contains("core")) {
             return when {
-                search.contains("ultra") || search.contains("245k") || search.contains("265k") || search.contains("285k") -> intelArrowLake
-                search.contains("-14") || search.contains("14th gen") || search.contains("14a gen") -> intel14gen
-                search.contains("-13") || search.contains("13th gen") || search.contains("13a gen") -> intel13gen
-                search.contains("-12") || search.contains("12th gen") || search.contains("12a gen") -> intel12gen
-                search.contains("-11") || search.contains("11th gen") || search.contains("11a gen") -> intel11gen
-                search.contains("-10") || search.contains("10th gen") || search.contains("10a gen") -> intel10gen
+                search.contains("ultra") || search.contains("245k") || search.contains("265k") || search.contains("285k") -> images["intel_arrow"]
+                search.contains("-14") || search.contains("14th gen") -> images["intel_14"]
+                search.contains("-13") || search.contains("13th gen") -> images["intel_13"]
+                search.contains("-12") || search.contains("12th gen") -> images["intel_12"]
+                search.contains("-11") || search.contains("11th gen") -> images["intel_11"]
+                search.contains("-10") || search.contains("10th gen") -> images["intel_10"]
                 else -> null
             }
         }
 
         if (nameOnly.contains("ryzen")) {
             val modelNumber = Regex("""\d{4}""").find(nameOnly)?.value ?: ""
-            val firstDigit = modelNumber.firstOrNull()?.toString() ?: ""
-            return when (firstDigit) {
-                "9" -> amd9000
-                "7" -> amd7000
-                "5" -> amd5000
-                "3" -> amd3000
-                "4" -> if (modelNumber == "4100" || modelNumber == "4500") amd3000 else amd4000
+            return when (modelNumber.firstOrNull()) {
+                '9' -> images["ryzen_9000"]
+                '7' -> images["ryzen_7000"]
+                '5' -> images["ryzen_5000"]
+                '3' -> images["ryzen_3000"]
+                '4' -> if (modelNumber == "4100" || modelNumber == "4500") images["ryzen_3000"] else images["ryzen_4000"]
                 else -> null
             }
         }
