@@ -56,4 +56,7 @@ sealed class Screen {
 
     @Serializable
     data object AdminPanel : Screen()
+
+    @Serializable
+    data object AdminLogs : Screen()
 }

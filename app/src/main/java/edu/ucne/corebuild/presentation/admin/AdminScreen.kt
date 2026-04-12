@@ -23,12 +23,14 @@ import edu.ucne.corebuild.presentation.components.toPrice
 @Composable
 fun AdminScreen(
     viewModel: AdminViewModel = hiltViewModel(),
+    onLogsClick: () -> Unit,
     onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     AdminBody(
         state = state,
         onEvent = viewModel::onEvent,
+        onLogsClick = onLogsClick,
         onBack = onBack
     )
 }
@@ -38,6 +40,7 @@ fun AdminScreen(
 fun AdminBody(
     state: AdminUiState,
     onEvent: (AdminEvent) -> Unit,
+    onLogsClick: () -> Unit,
     onBack: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -60,6 +63,11 @@ fun AdminBody(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onLogsClick) {
+                        Icon(Icons.Default.History, contentDescription = "Historial")
                     }
                 }
             )
