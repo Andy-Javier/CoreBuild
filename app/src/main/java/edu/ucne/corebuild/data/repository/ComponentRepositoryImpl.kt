@@ -25,7 +25,7 @@ class ComponentRepositoryImpl @Inject constructor(
             .onSuccess { list ->
                 val entities = list.map { dto ->
                     val domain = dto.toDomain()
-                    val imageUrl = determineCpuImage(domain.name, domain.generation)
+                    val imageUrl = determineCpuImage(domain)
                     domain.copy(imageUrl = imageUrl).toEntity()
                 }
                 dao.insertAll(entities)
@@ -103,9 +103,143 @@ class ComponentRepositoryImpl @Inject constructor(
             .flowOn(Dispatchers.IO)
     }
 
-    private fun determineCpuImage(name: String, gen: String): String? {
-        val search = "$name $gen".lowercase()
-        val nameOnly = name.lowercase()
+    override suspend fun addComponent(component: Component): Result<Unit> = runCatching {
+        val response = when (component) {
+            is Component.CPU -> remoteDataSource.createCpu(component.toDto())
+            is Component.GPU -> remoteDataSource.createGpu(component.toDto())
+            is Component.Motherboard -> remoteDataSource.createMotherboard(component.toDto())
+            is Component.RAM -> remoteDataSource.createRam(component.toDto())
+            is Component.PSU -> remoteDataSource.createPsu(component.toDto())
+        }
+        
+        response.onSuccess { dto ->
+            val domain = when (dto) {
+                is CpuDto -> dto.toDomain()
+                is GpuDto -> dto.toDomain(dto.id + 1000)
+                is MotherboardDto -> dto.toDomain(dto.id + 2000)
+                is RamDto -> dto.toDomain(dto.id + 3000)
+                is PsuDto -> dto.toDomain(dto.id + 4000)
+                else -> throw IllegalStateException("Respuesta inesperada")
+            }
+            dao.insertAll(listOf(domain.toEntity()))
+        }.onFailure { throw it }
+    }
+
+    override suspend fun updateComponent(component: Component): Result<Unit> = runCatching {
+        val response = when (component) {
+            is Component.CPU -> remoteDataSource.updateCpu(component.id, component.toDto())
+            is Component.GPU -> remoteDataSource.updateGpu(component.id - 1000, component.toDto())
+            is Component.Motherboard -> remoteDataSource.updateMotherboard(component.id - 2000, component.toDto())
+            is Component.RAM -> remoteDataSource.updateRam(component.id - 3000, component.toDto())
+            is Component.PSU -> remoteDataSource.updatePsu(component.id - 4000, component.toDto())
+        }
+
+        response.onSuccess { dto ->
+            val domain = when (dto) {
+                is CpuDto -> dto.toDomain()
+                is GpuDto -> dto.toDomain(dto.id + 1000)
+                is MotherboardDto -> dto.toDomain(dto.id + 2000)
+                is RamDto -> dto.toDomain(dto.id + 3000)
+                is PsuDto -> dto.toDomain(dto.id + 4000)
+                else -> throw IllegalStateException("Respuesta inesperada")
+            }
+            dao.insertAll(listOf(domain.toEntity()))
+        }.onFailure { throw it }
+    }
+
+    override suspend fun deleteComponent(id: Int, type: String): Result<Unit> = runCatching {
+        val response = when (type.lowercase()) {
+            "procesador", "cpu" -> remoteDataSource.deleteCpu(id)
+            "tarjeta gráfica", "gpu" -> remoteDataSource.deleteGpu(id - 1000)
+            "placa base", "motherboard" -> remoteDataSource.deleteMotherboard(id - 2000)
+            "memoria ram", "ram" -> remoteDataSource.deleteRam(id - 3000)
+            "fuente de poder", "psu" -> remoteDataSource.deletePsu(id - 4000)
+            else -> throw IllegalArgumentException("Tipo de componente no soportado: $type")
+        }
+
+        response.onSuccess {
+            dao.deleteById(id)
+        }.onFailure { throw it }
+    }
+
+    private fun Component.CPU.toDto() = CpuDto(
+        id = this.id,
+        nombre = this.name,
+        marca = this.brand,
+        socket = this.socket,
+        generacion = this.generation,
+        nucleos = this.cores,
+        hilos = this.threads,
+        frecuenciaBase = this.baseClock,
+        frecuenciaTurbo = this.boostClock,
+        tdpWatts = this.tdp.replace("W", "").trim().toIntOrNull(),
+        precioUsd = this.price,
+        descripcion = this.description,
+        imageUrl = this.imageUrl
+    )
+
+    private fun Component.GPU.toDto() = GpuDto(
+        id = if (this.id > 1000) this.id - 1000 else this.id,
+        nombre = this.name,
+        marca = this.brand,
+        chipset = this.chipset,
+        vram = this.vram,
+        tipoVram = this.vramType,
+        frecuenciaBase = this.baseClock,
+        frecuenciaBoost = this.boostClock,
+        consumoWatts = this.consumptionWatts.replace("W", "").trim().toIntOrNull(),
+        precioUsd = this.price,
+        descripcion = this.description,
+        imageUrl = this.imageUrl
+    )
+
+    private fun Component.Motherboard.toDto() = MotherboardDto(
+        id = if (this.id > 2000) this.id - 2000 else this.id,
+        nombre = this.name,
+        marca = this.brand,
+        socket = this.socket,
+        chipset = this.chipset,
+        formato = this.format,
+        tipoRam = this.ramType,
+        velocidadRamMax = this.maxRamCapacity,
+        precioUsd = this.price,
+        descripcion = this.description,
+        imageUrl = this.imageUrl,
+        slotsM2 = this.slotsM2
+    )
+
+    private fun Component.RAM.toDto() = RamDto(
+        id = if (this.id > 3000) this.id - 3000 else this.id,
+        nombre = this.name,
+        marca = this.brand,
+        tipo = this.type,
+        capacidadTotal = this.capacity,
+        configuracion = this.configuration,
+        velocidad = this.speed,
+        latencia = this.latency,
+        voltaje = this.voltage,
+        precioUsd = this.price,
+        descripcion = this.description,
+        imageUrl = this.imageUrl
+    )
+
+    private fun Component.PSU.toDto() = PsuDto(
+        id = if (this.id > 4000) this.id - 4000 else this.id,
+        nombre = this.name,
+        marca = this.brand,
+        potenciaWatts = this.wattage,
+        certificacion = this.certification,
+        tipoModular = this.modularity,
+        ventilador = this.fanSize,
+        protecciones = this.protection,
+        precioUsd = this.price,
+        descripcion = this.description,
+        imageUrl = this.imageUrl
+    )
+
+    private fun determineCpuImage(cpu: Component.CPU): String? {
+        val search = "${cpu.name} ${cpu.generation}".lowercase()
+        val nameOnly = cpu.name.lowercase()
 
         val amd3000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741950/Ryzen_3000_l7gbgt.jpg"
         val amd4000 = "https://res.cloudinary.com/dsnaidobx/image/upload/v1774741851/Ryzen_4000_isyqkf.png"
