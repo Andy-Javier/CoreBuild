@@ -20,6 +20,7 @@ import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
 import edu.ucne.corebuild.domain.recommendation.BuildRecommender
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
 import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
+import edu.ucne.corebuild.domain.auth.AuthManager
 import edu.ucne.corebuild.presentation.notifications.NotificationHelper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -143,4 +144,8 @@ object AppModule {
     @Singleton
     fun provideStatsRepository(statsDao: StatsDao, componentDao: ComponentDao): StatsRepository =
         StatsRepositoryImpl(statsDao, componentDao)
+
+    @Provides
+    @Singleton
+    fun provideAuthManager(): AuthManager = AuthManager()
 }
