@@ -16,10 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.SettingsSuggest
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +38,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dagger.hilt.android.AndroidEntryPoint
 import edu.ucne.corebuild.presentation.admin.AdminScreen
+import edu.ucne.corebuild.presentation.admin.logs.LogsScreen
 import edu.ucne.corebuild.presentation.auth.AuthViewModel
 import edu.ucne.corebuild.presentation.auth.LoginScreen
 import edu.ucne.corebuild.presentation.auth.ProfileScreen
@@ -252,6 +250,13 @@ fun CoreBuildAppContent(
                     }
                 )
                 if (authUiState.isAdmin) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+                    Text(
+                        "Administración",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                     DrawerItem(
                         icon = Icons.Outlined.AdminPanelSettings,
                         label = "Panel Admin",
@@ -259,6 +264,15 @@ fun CoreBuildAppContent(
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Screen.AdminPanel)
+                        }
+                    )
+                    DrawerItem(
+                        icon = Icons.Outlined.History,
+                        label = "Historial de cambios",
+                        selected = currentRoute?.contains("AdminLogs") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Screen.AdminLogs)
                         }
                     )
                 }
@@ -417,7 +431,13 @@ fun CoreBuildAppContent(
                 )
             }
             composable<Screen.AdminPanel> {
-                AdminScreen(onBack = { navController.navigateUp() })
+                AdminScreen(
+                    onLogsClick = { navController.navigate(Screen.AdminLogs) },
+                    onBack = { navController.navigateUp() }
+                )
+            }
+            composable<Screen.AdminLogs> {
+                LogsScreen(onBack = { navController.navigateUp() })
             }
         }
     }
