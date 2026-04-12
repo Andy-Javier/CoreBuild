@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.corebuild.domain.model.User
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.UserRepository
+import edu.ucne.corebuild.domain.auth.AuthManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -13,7 +14,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val orderRepository: OrderRepository
+    private val orderRepository: OrderRepository,
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -27,12 +29,14 @@ class AuthViewModel @Inject constructor(
     private fun observeLoggedUser() {
         viewModelScope.launch {
             userRepository.getLoggedUser().collect { user ->
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
-                        user = user, 
-                        isLogged = user != null, 
+                        user = user,
+                        isLogged = user != null,
+                        isAdmin = if (user != null)
+                            authManager.isAdmin(user.email) else false,
                         isCheckingSession = false
-                    ) 
+                    )
                 }
             }
         }
@@ -42,11 +46,11 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             orderRepository.getAllOrders().collect { orders ->
                 val totalSpent = orders.sumOf { it.totalPrice }
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         totalOrdersCount = orders.size,
                         totalSpent = totalSpent
-                    ) 
+                    )
                 }
             }
         }
@@ -65,10 +69,36 @@ class AuthViewModel @Inject constructor(
     private fun login(email: String, pass: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+
+            // Paso 1: Verificar si es admin con AuthManager
+            if (authManager.validateAdminCredentials(email, pass)) {
+                val adminUser = User(
+                    name = if (email.contains("andernunez")) "Anderson Nuñez" else "Andy Javier",
+                    email = email.trim().lowercase()
+                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = adminUser,
+                        isLogged = true,
+                        isAdmin = true
+                    )
+                }
+                return@launch
+            }
+
+            // Paso 2: Si no es admin, proceder con login normal en Room/API
             val result = userRepository.login(email, pass)
             result.fold(
                 onSuccess = { user ->
-                    _uiState.update { it.copy(isLoading = false, user = user, isLogged = true) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            user = user,
+                            isLogged = true,
+                            isAdmin = authManager.isAdmin(user.email)
+                        )
+                    }
                 },
                 onFailure = { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -104,7 +134,7 @@ class AuthViewModel @Inject constructor(
     private fun logout() {
         viewModelScope.launch {
             userRepository.logout()
-            _uiState.update { it.copy(user = null, isLogged = false, isCheckingSession = false) }
+            _uiState.update { it.copy(user = null, isLogged = false, isAdmin = false, isCheckingSession = false) }
         }
     }
 }

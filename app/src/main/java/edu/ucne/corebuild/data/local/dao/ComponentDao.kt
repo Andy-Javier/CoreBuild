@@ -20,4 +20,7 @@ interface ComponentDao {
 
     @Query("SELECT COUNT(*) FROM components")
     suspend fun getCount(): Int
+
+    @Query("DELETE FROM components WHERE id = :id")
+    suspend fun deleteById(id: Int)
 }

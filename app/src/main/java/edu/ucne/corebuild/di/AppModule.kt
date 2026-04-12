@@ -9,6 +9,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import edu.ucne.corebuild.core.network.NetworkManager
 import edu.ucne.corebuild.data.local.dao.*
 import edu.ucne.corebuild.data.local.database.CoreBuildDatabase
 import edu.ucne.corebuild.data.remote.api.CoreBuildApi
@@ -20,6 +21,7 @@ import edu.ucne.corebuild.domain.buildscore.BuildScoreCalculator
 import edu.ucne.corebuild.domain.recommendation.BuildRecommender
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
 import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
+import edu.ucne.corebuild.domain.auth.AuthManager
 import edu.ucne.corebuild.presentation.notifications.NotificationHelper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -143,4 +145,14 @@ object AppModule {
     @Singleton
     fun provideStatsRepository(statsDao: StatsDao, componentDao: ComponentDao): StatsRepository =
         StatsRepositoryImpl(statsDao, componentDao)
+
+    @Provides
+    @Singleton
+    fun provideAuthManager(): AuthManager = AuthManager()
+
+    @Provides
+    @Singleton
+    fun provideNetworkManager(
+        @ApplicationContext context: Context
+    ): NetworkManager = NetworkManager(context)
 }
