@@ -1,8 +1,13 @@
 package edu.ucne.corebuild.presentation.admin
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,12 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.presentation.components.toPrice
 
@@ -129,7 +137,8 @@ fun AdminBody(
             ComponentDialog(
                 title = "Editar Componente",
                 component = state.selectedComponent,
-                isSaving = state.isSaving,
+                uiState = state,
+                onEvent = onEvent,
                 onDismiss = { onEvent(AdminEvent.OnDismissDialog) },
                 onSave = { onEvent(AdminEvent.OnUpdateComponent(it)) }
             )
@@ -139,7 +148,8 @@ fun AdminBody(
             ComponentDialog(
                 title = "Nuevo Componente",
                 component = null,
-                isSaving = state.isSaving,
+                uiState = state,
+                onEvent = onEvent,
                 onDismiss = { onEvent(AdminEvent.OnDismissDialog) },
                 onSave = { onEvent(AdminEvent.OnCreateComponent(it)) }
             )
@@ -222,7 +232,8 @@ fun ComponentAdminCard(
 fun ComponentDialog(
     title: String,
     component: Component? = null,
-    isSaving: Boolean,
+    uiState: AdminUiState,
+    onEvent: (AdminEvent) -> Unit,
     onDismiss: () -> Unit,
     onSave: (Component) -> Unit
 ) {
@@ -233,11 +244,53 @@ fun ComponentDialog(
     val categories = listOf("Procesador", "Tarjeta Gráfica", "Placa Base", "Memoria RAM", "Fuente de Poder")
     var expanded by remember { mutableStateOf(false) }
 
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { onEvent(AdminEvent.OnImageSelected(it.toString())) }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Selector de Imagen
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { imageLauncher.launch("image/*") }
+                        .align(Alignment.CenterHorizontally),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (uiState.selectedImageUri != null) {
+                        AsyncImage(
+                            model = uiState.selectedImageUri,
+                            contentDescription = "Imagen seleccionada",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(Icons.Default.AddAPhoto, contentDescription = "Seleccionar imagen")
+                    }
+                }
+
+                if (uiState.selectedImageUri != null && !uiState.selectedImageUri.startsWith("http")) {
+                    Button(
+                        onClick = { onEvent(AdminEvent.OnUploadImage) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isUploadingImage
+                    ) {
+                        if (uiState.isUploadingImage) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Subir a Cloudinary")
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -294,9 +347,9 @@ fun ComponentDialog(
                     }
                     onSave(newComponent)
                 },
-                enabled = !isSaving && name.isNotBlank() && price.toDoubleOrNull() != null
+                enabled = !uiState.isSaving && name.isNotBlank() && price.toDoubleOrNull() != null
             ) {
-                if (isSaving) {
+                if (uiState.isSaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
