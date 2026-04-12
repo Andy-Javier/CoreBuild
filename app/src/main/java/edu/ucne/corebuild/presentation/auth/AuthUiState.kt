@@ -5,6 +5,7 @@ import edu.ucne.corebuild.domain.model.User
 data class AuthUiState(
     val user: User? = null,
     val isLogged: Boolean = false,
+    val isAdmin: Boolean = false,
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,
     val error: String? = null,
