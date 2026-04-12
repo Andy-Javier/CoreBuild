@@ -1,9 +1,13 @@
 package edu.ucne.corebuild.presentation.admin
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import edu.ucne.corebuild.core.network.NetworkManager
+import edu.ucne.corebuild.data.remote.image.ImageUploader
 import edu.ucne.corebuild.domain.auth.AuthManager
 import edu.ucne.corebuild.domain.logs.AdminLog
 import edu.ucne.corebuild.domain.logs.AdminLogRepository
@@ -21,7 +25,9 @@ class AdminViewModel @Inject constructor(
     private val networkManager: NetworkManager,
     private val authManager: AuthManager,
     private val userRepository: UserRepository,
-    private val adminLogRepository: AdminLogRepository
+    private val adminLogRepository: AdminLogRepository,
+    private val imageUploader: ImageUploader,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -80,17 +86,19 @@ class AdminViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         selectedComponent = event.component,
-                        showEditDialog = true
+                        showEditDialog = true,
+                        selectedImageUri = event.component.imageUrl
                     )
                 }
             AdminEvent.OnShowCreateDialog -> 
-                _uiState.update { it.copy(showCreateDialog = true) }
+                _uiState.update { it.copy(showCreateDialog = true, selectedImageUri = null) }
             AdminEvent.OnDismissDialog ->
                 _uiState.update {
                     it.copy(
                         showCreateDialog = false,
                         showEditDialog = false,
-                        selectedComponent = null
+                        selectedComponent = null,
+                        selectedImageUri = null
                     )
                 }
             AdminEvent.DismissMessage ->
@@ -100,7 +108,39 @@ class AdminViewModel @Inject constructor(
                         errorMessage = null
                     )
                 }
+            is AdminEvent.OnImageSelected ->
+                _uiState.update { it.copy(selectedImageUri = event.uri) }
+            AdminEvent.OnUploadImage -> uploadImage()
             else -> {}
+        }
+    }
+
+    private fun uploadImage() {
+        val uriStr = _uiState.value.selectedImageUri ?: return
+        if (uriStr.startsWith("http")) return // Ya es una URL de red
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploadingImage = true) }
+            imageUploader.uploadImage(context, Uri.parse(uriStr))
+                .fold(
+                    onSuccess = { url ->
+                        _uiState.update {
+                            it.copy(
+                                isUploadingImage = false,
+                                selectedImageUri = url,
+                                successMessage = "Imagen subida correctamente"
+                            )
+                        }
+                    },
+                    onFailure = { e ->
+                        _uiState.update {
+                            it.copy(
+                                isUploadingImage = false,
+                                errorMessage = "Error subiendo imagen: ${e.message}"
+                            )
+                        }
+                    }
+                )
         }
     }
 
@@ -113,7 +153,8 @@ class AdminViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            componentRepository.addComponent(component)
+            val componentWithImage = component.withImageUrl(_uiState.value.selectedImageUri)
+            componentRepository.addComponent(componentWithImage)
                 .fold(
                     onSuccess = {
                         adminLogRepository.addLog(
@@ -128,7 +169,8 @@ class AdminViewModel @Inject constructor(
                             it.copy(
                                 isSaving = false,
                                 successMessage = "Componente creado correctamente",
-                                showCreateDialog = false
+                                showCreateDialog = false,
+                                selectedImageUri = null
                             )
                         }
                     },
@@ -153,7 +195,8 @@ class AdminViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            componentRepository.updateComponent(component)
+            val componentWithImage = component.withImageUrl(_uiState.value.selectedImageUri)
+            componentRepository.updateComponent(componentWithImage)
                 .fold(
                     onSuccess = {
                         adminLogRepository.addLog(
@@ -169,7 +212,8 @@ class AdminViewModel @Inject constructor(
                                 isSaving = false,
                                 successMessage = "Componente actualizado",
                                 showEditDialog = false,
-                                selectedComponent = null
+                                selectedComponent = null,
+                                selectedImageUri = null
                             )
                         }
                     },
