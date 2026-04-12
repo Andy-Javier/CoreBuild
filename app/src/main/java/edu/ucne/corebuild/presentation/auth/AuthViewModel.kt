@@ -69,6 +69,25 @@ class AuthViewModel @Inject constructor(
     private fun login(email: String, pass: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+
+            // Paso 1: Verificar si es admin con AuthManager
+            if (authManager.validateAdminCredentials(email, pass)) {
+                val adminUser = User(
+                    name = if (email.contains("andernunez")) "Anderson Nuñez" else "Andy Javier",
+                    email = email.trim().lowercase()
+                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = adminUser,
+                        isLogged = true,
+                        isAdmin = true
+                    )
+                }
+                return@launch
+            }
+
+            // Paso 2: Si no es admin, proceder con login normal en Room/API
             val result = userRepository.login(email, pass)
             result.fold(
                 onSuccess = { user ->
