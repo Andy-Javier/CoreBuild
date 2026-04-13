@@ -67,60 +67,12 @@ fun RecommendationBody(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Inputs: Budget
-            OutlinedTextField(
-                value = uiState.budget,
-                onValueChange = { onEvent(RecommendationEvent.OnBudgetChange(it)) },
-                label = { Text("Presupuesto Máximo (USD)") },
-                placeholder = { Text("Ej: 1000") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                prefix = { Text("$ ") },
-                shape = MaterialTheme.shapes.medium
+            BudgetInputSection(
+                budget = uiState.budget,
+                priority = uiState.priority,
+                isLoading = uiState.isLoading,
+                onEvent = onEvent
             )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Prioritize Section
-            Text(
-                "Configuración Especial:", 
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = uiState.priority == "GPU",
-                    onClick = { 
-                        onEvent(RecommendationEvent.OnPriorityChange(if (uiState.priority == "GPU") null else "GPU"))
-                    },
-                    label = { 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Priorizar Gráfica (GPU)") 
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { onEvent(RecommendationEvent.OnGenerateBuild) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = uiState.budget.isNotEmpty() && !uiState.isLoading,
-                shape = MaterialTheme.shapes.large
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Generar Configuración")
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -129,58 +81,137 @@ fun RecommendationBody(
                     CircularProgressIndicator()
                 }
             } else if (uiState.error != null) {
-                ErrorCard(uiState.error!!)
+                ErrorCard(uiState.error)
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    if (uiState.recommendedComponents.isNotEmpty()) {
-                        item {
+                RecommendationResults(
+                    budget = uiState.budget,
+                    totalPrice = uiState.totalPrice,
+                    components = uiState.recommendedComponents,
+                    onComponentClick = onComponentClick
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BudgetInputSection(
+    budget: String,
+    priority: String?,
+    isLoading: Boolean,
+    onEvent: (RecommendationEvent) -> Unit
+) {
+    Column {
+        OutlinedTextField(
+            value = budget,
+            onValueChange = { onEvent(RecommendationEvent.OnBudgetChange(it)) },
+            label = { Text("Presupuesto Máximo (USD)") },
+            placeholder = { Text("Ej: 1000") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            prefix = { Text("$ ") },
+            shape = MaterialTheme.shapes.medium
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            "Configuración Especial:", 
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = priority == "GPU",
+                onClick = { 
+                    onEvent(RecommendationEvent.OnPriorityChange(if (priority == "GPU") null else "GPU"))
+                },
+                label = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Priorizar Gráfica (GPU)") 
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { onEvent(RecommendationEvent.OnGenerateBuild) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = budget.isNotEmpty() && !isLoading,
+            shape = MaterialTheme.shapes.large
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Generar Configuración")
+        }
+    }
+}
+
+@Composable
+private fun RecommendationResults(
+    budget: String,
+    totalPrice: Double,
+    components: List<Component>,
+    onComponentClick: (Int) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        if (components.isNotEmpty()) {
+            item {
+                Text(
+                    "Build Sugerida",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            items(components) { component ->
+                RecommendedItem(component, onComponentClick)
+            }
+            item {
+                val budgetVal = budget.toDoubleOrNull() ?: 0.0
+                val remaining = budgetVal - totalPrice
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                SummaryRow("Total Estimado:", totalPrice.toPrice(), true)
+                
+                if (remaining < 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Build Sugerida",
-                                style = MaterialTheme.typography.titleMedium,
+                                "⚠️ Supera tu presupuesto por ${(-remaining).toPrice()}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        items(uiState.recommendedComponents) { component ->
-                            RecommendedItem(component, onComponentClick)
-                        }
-                        item {
-                            val budgetVal = uiState.budget.toDoubleOrNull() ?: 0.0
-                            val remaining = budgetVal - uiState.totalPrice
-                            
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                            SummaryRow("Total Estimado:", uiState.totalPrice.toPrice(), true)
-                            
-                            if (remaining < 0) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            "⚠️ Supera tu presupuesto por ${(-remaining).toPrice()}",
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            } else {
-                                SummaryRow("Presupuesto Restante:", remaining.toPrice(), false)
-                            }
-                        }
                     }
+                } else {
+                    SummaryRow("Presupuesto Restante:", remaining.toPrice(), false)
                 }
             }
         }
