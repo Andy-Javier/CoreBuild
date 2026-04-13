@@ -62,4 +62,7 @@ sealed class Screen {
 
     @Serializable
     data object ComponentForm : Screen()
+
+    @Serializable
+    data object EditComponent : Screen()
 }
