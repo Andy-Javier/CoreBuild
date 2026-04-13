@@ -87,9 +87,9 @@ fun ComparatorBody(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    if (uiState.selectedComponent1 != null) {
+                    uiState.selectedComponent1?.let { c1 ->
                         AsyncImage(
-                            model = uiState.selectedComponent1.imageUrl ?: "https://via.placeholder.com/100",
+                            model = c1.imageUrl ?: "https://via.placeholder.com/100",
                             contentDescription = null,
                             modifier = Modifier
                                 .size(80.dp)
@@ -108,9 +108,9 @@ fun ComparatorBody(
                 }
                 
                 Column(modifier = Modifier.weight(1f)) {
-                    if (uiState.selectedComponent2 != null) {
+                    uiState.selectedComponent2?.let { c2 ->
                         AsyncImage(
-                            model = uiState.selectedComponent2.imageUrl ?: "https://via.placeholder.com/100",
+                            model = c2.imageUrl ?: "https://via.placeholder.com/100",
                             contentDescription = null,
                             modifier = Modifier
                                 .size(80.dp)
@@ -159,7 +159,7 @@ fun ComparisonMatrix(c1: Component, c2: Component) {
                 Metric("Boost Clock", parseGhz(c1.boostClock), parseGhz(c2.boostClock), c1.boostClock, c2.boostClock),
                 Metric("Base Clock", parseGhz(c1.baseClock), parseGhz(c2.baseClock), c1.baseClock, c2.baseClock),
                 Metric("Caché L3", parseMb(c1.cache), parseMb(c2.cache), c1.cache ?: "N/A", c2.cache ?: "N/A"),
-                Metric("TDP", parseWatts(c1.tdp), parseWatts(c2.tdp), c1.tdp ?: "N/A", c2.tdp ?: "N/A", inverse = true),
+                Metric("TDP", parseWatts(c1.tdp), parseWatts(c2.tdp), c1.tdp, c2.tdp, inverse = true),
                 Metric("Precio", c1.price, c2.price, "$${c1.price.toInt()}", "$${c2.price.toInt()}", inverse = true)
             )
             c1 is Component.GPU && c2 is Component.GPU -> listOf(
@@ -328,8 +328,8 @@ private fun parseGhz(text: String): Double =
 private fun parseMb(text: String?): Double =
     Regex("""\d+""").find(text ?: "")?.value?.toDoubleOrNull() ?: 0.0
 
-private fun parseWatts(text: String?): Double =
-    Regex("""\d+""").find(text ?: "")?.value?.toDoubleOrNull() ?: 0.0
+private fun parseWatts(text: String): Double =
+    Regex("""\d+""").find(text)?.value?.toDoubleOrNull() ?: 0.0
 
 private fun cpuPerformanceScore(cpu: Component.CPU): Double {
     val boostGhz = parseGhz(cpu.boostClock)
