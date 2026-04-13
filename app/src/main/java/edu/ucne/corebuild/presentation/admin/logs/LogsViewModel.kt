@@ -32,7 +32,7 @@ class LogsViewModel @Inject constructor(
 
     fun onEvent(event: LogsEvent) {
         when (event) {
-            LogsEvent.OnLoad -> {}
+            LogsEvent.OnLoad -> { /* No action needed */ }
             is LogsEvent.OnFilterChange -> {
                 _uiState.update {
                     it.copy(
