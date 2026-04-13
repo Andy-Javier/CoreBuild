@@ -128,102 +128,15 @@ fun ProductDetailContent(
         },
         bottomBar = {
             state.component?.let { component ->
-                Surface(
-                    tonalElevation = 8.dp,
-                    shadowElevation = 8.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .navigationBarsPadding()
-                            .padding(16.dp)
-                            .fillMaxWidth()
-                    ) {
-                        if (availableToSelect == 0) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Info, 
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "Has alcanzado el límite máximo (${state.quantityLimit}).",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    "Precio Total",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    (component.price * quantity).toPrice(),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (availableToSelect > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            
-                            QuantitySelector(
-                                quantity = quantity,
-                                limit = availableToSelect,
-                                enabled = availableToSelect > 0,
-                                onQuantityChange = { quantity = it }
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { onAddToCart(component, quantity) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(56.dp),
-                                shape = MaterialTheme.shapes.extraLarge,
-                                enabled = availableToSelect > 0
-                            ) {
-                                Icon(Icons.Default.AddShoppingCart, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Agregar")
-                            }
-                            
-                            Button(
-                                onClick = { onBuyNow(component, quantity) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(56.dp),
-                                shape = MaterialTheme.shapes.extraLarge,
-                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
-                                enabled = availableToSelect > 0
-                            ) {
-                                Text("Comprar Ahora")
-                            }
-                        }
-                    }
-                }
+                ProductPriceSection(
+                    price = component.price,
+                    quantity = quantity,
+                    availableToSelect = availableToSelect,
+                    quantityLimit = state.quantityLimit,
+                    onQuantityChange = { quantity = it },
+                    onAddToCart = { onAddToCart(component, quantity) },
+                    onBuyNow = { onBuyNow(component, quantity) }
+                )
             }
         }
     ) { padding ->
@@ -241,148 +154,27 @@ fun ProductDetailContent(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        Box(
-                            modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(300.dp)
-                                    .padding(16.dp)
-                        ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(component.imageUrl ?: "https://via.placeholder.com/500")
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = component.name,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(MaterialTheme.shapes.extraLarge),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
+                        ProductImageSection(
+                            imageUrl = component.imageUrl,
+                            name = component.name
+                        )
 
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-                                ),
-                                shape = MaterialTheme.shapes.extraLarge
-                            ) {
-                                Column(modifier = Modifier.padding(24.dp)) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        shape = MaterialTheme.shapes.small
-                                    ) {
-                                        Text(
-                                            text = component.category.uppercase(),
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    
-                                    val displayName = if (component is Component.RAM && state.variants.size > 1) {
-                                        val configPatterns = listOf(
-                                            Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
-                                            Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
-                                        )
-                                        var base = component.name
-                                        for (pattern in configPatterns) {
-                                            val match = pattern.find(base)
-                                            if (match != null) {
-                                                base = base.substring(0, match.range.first).trim()
-                                                break
-                                            }
-                                        }
-                                        base
-                                    } else {
-                                        component.name
-                                    }
-
-                                    Text(
-                                        text = displayName,
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = component.description,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
-                                    )
-                                }
-                            }
+                            ProductHeaderCard(
+                                component = component,
+                                variantsSize = state.variants.size
+                            )
 
                             if (state.variants.size > 1 && component is Component.RAM) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = MaterialTheme.shapes.extraLarge,
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-                                    )
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text(
-                                            "Selecciona tu configuración",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            "${state.variants.size} opciones disponibles",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        FlowRow(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            state.variants
-                                                .sortedBy { (it as? Component.RAM)?.price ?: 0.0 }
-                                                .forEach { variant ->
-                                                    val isSelected = variant.id == component.id
-                                                    val ramVariant = variant as Component.RAM
-                                                    val label = ramVariant.configuration.ifBlank { ramVariant.capacity }
-                                                    FilterChip(
-                                                        selected = isSelected,
-                                                        onClick = { onVariantClick(variant.id) },
-                                                        label = {
-                                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                Text(label, fontWeight = FontWeight.Bold)
-                                                                Text(
-                                                                    ramVariant.price.toPrice(),
-                                                                    style = MaterialTheme.typography.labelSmall
-                                                                )
-                                                            }
-                                                        },
-                                                        shape = MaterialTheme.shapes.medium
-                                                    )
-                                                }
-                                        }
-                                    }
-                                }
+                                RamVariantSection(
+                                    variants = state.variants,
+                                    currentComponentId = component.id,
+                                    onVariantClick = onVariantClick
+                                )
                             }
                             
                             if (state.currentInCart > 0) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Surface(
-                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                    shape = MaterialTheme.shapes.medium,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = "Ya tienes ${state.currentInCart} unidades en el carrito.",
-                                        modifier = Modifier.padding(12.dp),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                                CartStatusInfo(currentInCart = state.currentInCart)
                             }
                             
                             Spacer(modifier = Modifier.height(24.dp))
@@ -395,7 +187,7 @@ fun ProductDetailContent(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             
-                            SpecificComponentDetails(component)
+                            ProductSpecsTable(component)
                             
                             Spacer(modifier = Modifier.height(32.dp))
                         }
@@ -404,6 +196,353 @@ fun ProductDetailContent(
             }
         }
     }
+}
+
+@Composable
+private fun ProductImageSection(imageUrl: String?, name: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+            .padding(16.dp)
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl ?: "https://via.placeholder.com/500")
+                .crossfade(true)
+                .build(),
+            contentDescription = name,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(MaterialTheme.shapes.extraLarge),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+@Composable
+private fun ProductPriceSection(
+    price: Double,
+    quantity: Int,
+    availableToSelect: Int,
+    quantityLimit: Int,
+    onQuantityChange: (Int) -> Unit,
+    onAddToCart: () -> Unit,
+    onBuyNow: () -> Unit
+) {
+    Surface(
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            if (availableToSelect == 0) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info, 
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Has alcanzado el límite máximo ($quantityLimit).",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        "Precio Total",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        (price * quantity).toPrice(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (availableToSelect > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                QuantitySelector(
+                    quantity = quantity,
+                    limit = availableToSelect,
+                    enabled = availableToSelect > 0,
+                    onQuantityChange = onQuantityChange
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onAddToCart,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    enabled = availableToSelect > 0
+                ) {
+                    Icon(Icons.Default.AddShoppingCart, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Agregar")
+                }
+                
+                Button(
+                    onClick = onBuyNow,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                    enabled = availableToSelect > 0
+                ) {
+                    Text("Comprar Ahora")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductHeaderCard(component: Component, variantsSize: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+        ),
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text(
+                    text = component.category.uppercase(),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            val displayName = if (component is Component.RAM && variantsSize > 1) {
+                val configPatterns = listOf(
+                    Regex("""\s\d+x\d+GB.*""", RegexOption.IGNORE_CASE),
+                    Regex("""\s\d+GB.*""", RegexOption.IGNORE_CASE)
+                )
+                var base = component.name
+                for (pattern in configPatterns) {
+                    val match = pattern.find(base)
+                    if (match != null) {
+                        base = base.substring(0, match.range.first).trim()
+                        break
+                    }
+                }
+                base
+            } else {
+                component.name
+            }
+
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = component.description,
+                style = MaterialTheme.typography.bodyLarge,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RamVariantSection(
+    variants: List<Component>,
+    currentComponentId: Int,
+    onVariantClick: (Int) -> Unit
+) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Selecciona tu configuración",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "${variants.size} opciones disponibles",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                variants
+                    .sortedBy { (it as? Component.RAM)?.price ?: 0.0 }
+                    .forEach { variant ->
+                        val isSelected = variant.id == currentComponentId
+                        val ramVariant = variant as Component.RAM
+                        val label = ramVariant.configuration.ifBlank { ramVariant.capacity }
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { onVariantClick(variant.id) },
+                            label = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(label, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        ramVariant.price.toPrice(),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            },
+                            shape = MaterialTheme.shapes.medium
+                        )
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CartStatusInfo(currentInCart: Int) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Ya tienes $currentInCart unidades en el carrito.",
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ProductSpecsTable(component: Component) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            when (component) {
+                is Component.CPU -> CpuSpecs(component)
+                is Component.GPU -> GpuSpecs(component)
+                is Component.Motherboard -> MotherboardSpecs(component)
+                is Component.PSU -> PsuSpecs(component)
+                is Component.RAM -> RamSpecs(component)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CpuSpecs(cpu: Component.CPU) {
+    SpecRow("Marca", cpu.brand)
+    SpecRow("Socket", cpu.socket)
+    SpecRow("Generación", cpu.generation)
+    SpecRow("Núcleos", cpu.cores.toString())
+    SpecRow("Hilos", cpu.threads.toString())
+    SpecRow("Reloj Base", cpu.baseClock)
+    SpecRow("Reloj Boost", cpu.boostClock)
+    SpecRow("TDP", cpu.tdp)
+}
+
+@Composable
+private fun GpuSpecs(gpu: Component.GPU) {
+    SpecRow("Marca", gpu.brand)
+    SpecRow("Chipset", gpu.chipset)
+    SpecRow("VRAM", "${gpu.vram} ${gpu.vramType}")
+    val cleanWatts = gpu.consumptionWatts.replace("W", "", ignoreCase = true).trim()
+    SpecRow("Consumo", "${cleanWatts}W")
+    gpu.recommendedPSU?.let { SpecRow("Fuente Recomendada", it) }
+}
+
+@Composable
+private fun MotherboardSpecs(mobo: Component.Motherboard) {
+    SpecRow("Marca", mobo.brand)
+    SpecRow("Socket", mobo.socket)
+    SpecRow("Chipset", mobo.chipset)
+    SpecRow("Formato", mobo.format)
+    SpecRow("Tipo de RAM", mobo.ramType)
+}
+
+@Composable
+private fun RamSpecs(ram: Component.RAM) {
+    SpecRow("Marca", ram.brand)
+    SpecRow("Tipo", ram.type)
+    SpecRow("Capacidad", ram.capacity)
+    SpecRow("Configuración", ram.configuration)
+    SpecRow("Velocidad", ram.speed)
+    SpecRow("Latencia", ram.latency)
+}
+
+@Composable
+private fun PsuSpecs(psu: Component.PSU) {
+    SpecRow("Marca", psu.brand)
+    SpecRow("Potencia", "${psu.wattage}W")
+    SpecRow("Certificación", psu.certification)
+    SpecRow("Modularidad", psu.modularity)
+}
+
+@Composable
+fun SpecRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }
 
 @Composable
@@ -446,74 +585,6 @@ fun QuantitySelector(
             }
         }
     }
-}
-
-@Composable
-fun SpecificComponentDetails(component: Component) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            when (component) {
-                is Component.CPU -> {
-                    DetailRow("Marca", component.brand)
-                    DetailRow("Socket", component.socket)
-                    DetailRow("Generación", component.generation)
-                    DetailRow("Núcleos", component.cores.toString())
-                    DetailRow("Hilos", component.threads.toString())
-                    DetailRow("Reloj Base", component.baseClock)
-                    DetailRow("Reloj Boost", component.boostClock)
-                    DetailRow("TDP", component.tdp)
-                }
-                is Component.GPU -> {
-                    DetailRow("Marca", component.brand)
-                    DetailRow("Chipset", component.chipset)
-                    DetailRow("VRAM", "${component.vram} ${component.vramType}")
-                    val cleanWatts = component.consumptionWatts.replace("W", "", ignoreCase = true).trim()
-                    DetailRow("Consumo", "${cleanWatts}W")
-                    component.recommendedPSU?.let {
-                        DetailRow("Fuente Recomendada", it)
-                    }
-                }
-                is Component.Motherboard -> {
-                    DetailRow("Marca", component.brand)
-                    DetailRow("Socket", component.socket)
-                    DetailRow("Chipset", component.chipset)
-                    DetailRow("Formato", component.format)
-                    DetailRow("Tipo de RAM", component.ramType)
-                }
-                is Component.PSU -> {
-                    DetailRow("Marca", component.brand)
-                    DetailRow("Potencia", "${component.wattage}W")
-                    DetailRow("Certificación", component.certification)
-                    DetailRow("Modularidad", component.modularity)
-                }
-                is Component.RAM -> {
-                    DetailRow("Marca", component.brand)
-                    DetailRow("Tipo", component.type)
-                    DetailRow("Capacidad", component.capacity)
-                    DetailRow("Configuración", component.configuration)
-                    DetailRow("Velocidad", component.speed)
-                    DetailRow("Latencia", component.latency)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-    }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }
 
 @Preview(showBackground = true)
