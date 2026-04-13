@@ -435,14 +435,32 @@ fun CoreBuildAppContent(
                 AdminScreen(
                     onLogsClick = { navController.navigate(Screen.AdminLogs) },
                     onAddNewClick = { navController.navigate(Screen.ComponentForm) },
+                    onEditClick = { _ -> navController.navigate(Screen.EditComponent) },
                     onBack = { navController.navigateUp() }
                 )
             }
             composable<Screen.AdminLogs> {
                 LogsScreen(onBack = { navController.navigateUp() })
             }
-            composable<Screen.ComponentForm> {
-                ComponentFormScreen(onBack = { navController.navigateUp() })
+            composable<Screen.ComponentForm> { backStackEntry ->
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry<Screen.AdminPanel>()
+                }
+                ComponentFormScreen(
+                    parentEntry = parentEntry,
+                    isEditing = false,
+                    onBack = { navController.navigateUp() }
+                )
+            }
+            composable<Screen.EditComponent> { backStackEntry ->
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry<Screen.AdminPanel>()
+                }
+                ComponentFormScreen(
+                    parentEntry = parentEntry,
+                    isEditing = true,
+                    onBack = { navController.navigateUp() }
+                )
             }
         }
     }
