@@ -25,4 +25,6 @@ sealed interface AdminEvent {
     data object DismissMessage : AdminEvent
     data class OnImageSelected(val uri: String) : AdminEvent
     data object OnUploadImage : AdminEvent
+    data class OnFormFieldChange(val field: String, val value: String) : AdminEvent
+    data object OnResetForm : AdminEvent
 }
