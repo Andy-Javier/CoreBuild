@@ -93,15 +93,15 @@ class ProductDetailViewModel @Inject constructor(
         _orderCompleted,
         _error
     ) { args: Array<Any?> ->
-        val component = args[0] as Component?
-        val isFav = args[1] as Boolean
-        val variants = args[2] as List<Component>
-        val cartItems = args[3] as List<CartItem>
-        val user = args[4] as edu.ucne.corebuild.domain.model.User?
-        val loading = args[5] as Boolean
-        val message = args[6] as String?
-        val completed = args[7] as Boolean
-        val error = args[8] as String?
+        val component = args[0] as? Component
+        val isFav = args[1] as? Boolean ?: false
+        val variants = args[2] as? List<Component> ?: emptyList()
+        val cartItems = args[3] as? List<CartItem> ?: emptyList()
+        val user = args[4] as? edu.ucne.corebuild.domain.model.User
+        val loading = args[5] as? Boolean ?: false
+        val message = args[6] as? String
+        val completed = args[7] as? Boolean ?: false
+        val error = args[8] as? String
 
         val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 3
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
