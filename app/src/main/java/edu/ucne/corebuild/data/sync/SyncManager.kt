@@ -3,6 +3,7 @@ package edu.ucne.corebuild.data.sync
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import edu.ucne.corebuild.data.local.dao.ComponentDao
 import edu.ucne.corebuild.data.local.mapper.toEntity
@@ -47,7 +48,9 @@ class SyncManager @Inject constructor(
                 }
                 dao.insertAll(entities)
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Sync error: ${e.message}")
+        }
     }
 
     private suspend fun syncGpus() {
@@ -60,7 +63,9 @@ class SyncManager @Inject constructor(
                 }
                 dao.insertAll(entities)
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Sync error: ${e.message}")
+        }
     }
 
     private suspend fun syncMotherboards() {
@@ -73,7 +78,9 @@ class SyncManager @Inject constructor(
                 }
                 dao.insertAll(entities)
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Sync error: ${e.message}")
+        }
     }
 
     private suspend fun syncRams() {
@@ -86,7 +93,9 @@ class SyncManager @Inject constructor(
                 }
                 dao.insertAll(entities)
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Sync error: ${e.message}")
+        }
     }
 
     private suspend fun syncPsus() {
@@ -99,7 +108,9 @@ class SyncManager @Inject constructor(
                 }
                 dao.insertAll(entities)
             }
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Sync error: ${e.message}")
+        }
     }
 
     private fun determineCpuImage(name: String, gen: String): String? {
