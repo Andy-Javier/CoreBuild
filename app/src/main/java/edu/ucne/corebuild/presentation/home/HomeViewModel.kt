@@ -259,8 +259,8 @@ class HomeViewModel @Inject constructor(
                     _showBuildDialog.value = false
                     _navigationEvent.emit(HomeNavigationEvent.NavigateToCart)
                 }
-                HomeEvent.ResetNavigation -> { }
-                HomeEvent.LoadComponents -> { }
+                HomeEvent.ResetNavigation -> { /* No action needed */ }
+                HomeEvent.LoadComponents -> { /* No action needed */ }
                 is HomeEvent.OnComponentClick -> {
                     tracker.trackView(event.id)
                 }
@@ -295,3 +295,6 @@ private data class HomeUiLayersGroup(
     val featuredBuild: PredefinedBuild?,
     val showBuildDialog: Boolean
 )
+
+private fun <T1, T2, T3, T4, T5> quintuple(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5): Quintuple<T1, T2, T3, T4, T5> = Quintuple(t1, t2, t3, t4, t5)
+data class Quintuple<out T1, out T2, out T3, out T4, out T5>(val first: T1, val second: T2, val third: T3, val fourth: T4, val fifth: T5)
