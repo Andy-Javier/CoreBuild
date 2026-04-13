@@ -18,7 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.corebuild.presentation.components.AnimatedListItem
 import edu.ucne.corebuild.presentation.components.bounceClick
-import edu.ucne.corebuild.presentation.home.ComponentItem
+import edu.ucne.corebuild.presentation.components.ComponentItem
 import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 
 @Composable
@@ -31,7 +31,6 @@ fun FavoritesScreen(
 
     FavoritesBody(
         state = state,
-        onEvent = viewModel::onEvent,
         onComponentClick = onComponentClick,
         onMenuClick = onMenuClick
     )
@@ -41,7 +40,6 @@ fun FavoritesScreen(
 @Composable
 fun FavoritesBody(
     state: FavoritesUiState,
-    onEvent: (FavoritesEvent) -> Unit,
     onComponentClick: (Int) -> Unit,
     onMenuClick: () -> Unit
 ) {
@@ -113,7 +111,6 @@ fun FavoritesScreenPreview() {
     CoreBuildTheme {
         FavoritesBody(
             state = FavoritesUiState(),
-            onEvent = {},
             onComponentClick = {},
             onMenuClick = {}
         )
