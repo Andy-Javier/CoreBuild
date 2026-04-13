@@ -20,8 +20,7 @@ import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onRegisterSuccess: () -> Unit,
-    onLoginClick: () -> Unit,
-    onBackClick: () -> Unit
+    onLoginClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(uiState.isLogged) {
@@ -86,22 +85,11 @@ fun RegisterBody(
                 singleLine = true
             )
             Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
+            PasswordField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(
-                            if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                showPassword = showPassword,
+                onToggleVisibility = { showPassword = !showPassword }
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
@@ -124,7 +112,7 @@ fun RegisterBody(
             }
             if (uiState.error != null) {
                 Text(
-                    text = uiState.error ?: "",
+                    text = uiState.error,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 16.dp)
                 )
