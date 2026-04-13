@@ -73,12 +73,18 @@ class AdminViewModel @Inject constructor(
         }
     }
 
+    private fun String.withSuffix(suffix: String): String =
+        if (this.isBlank() || this.contains(suffix)) this else "$this$suffix"
+
+    private fun String.withSuffixSpaced(suffix: String): String =
+        if (this.isBlank() || this.contains(suffix)) this else "$this $suffix"
+
     fun onEvent(event: AdminEvent) {
         when (event) {
             AdminEvent.OnLoadComponents -> loadComponents()
             is AdminEvent.OnSelectType ->
                 _uiState.update { it.copy(selectedType = event.type) }
-            is AdminEvent.OnCreateComponent -> {
+            AdminEvent.OnCreateComponent -> {
                 val component = buildComponentFromForm()
                 if (component == null) {
                     _uiState.update { it.copy(errorMessage = "Completa los campos requeridos") }
@@ -86,17 +92,100 @@ class AdminViewModel @Inject constructor(
                     createComponent(component)
                 }
             }
-            is AdminEvent.OnUpdateComponent -> updateComponent(event.component)
+            is AdminEvent.OnUpdateComponent -> {
+                updateComponent(event.component)
+            }
             is AdminEvent.OnDeleteComponent ->
                 deleteComponent(event.id, event.type)
-            is AdminEvent.OnSelectComponent ->
-                _uiState.update {
-                    it.copy(
-                        selectedComponent = event.component,
-                        showEditDialog = true,
-                        selectedImageUri = event.component.imageUrl
+            is AdminEvent.OnSelectComponent -> {
+                val c = event.component
+                val form = when (c) {
+                    is Component.CPU -> ComponentFormState(
+                        tipo = "CPU",
+                        nombre = c.name,
+                        marca = c.brand,
+                        precioUsd = c.price.toString(),
+                        descripcion = c.description,
+                        imageUrl = c.imageUrl ?: "",
+                        socket = c.socket,
+                        generacion = c.generation,
+                        nucleos = c.cores.toString(),
+                        hilos = c.threads.toString(),
+                        frecuenciaBase = c.baseClock.replace(" GHz", ""),
+                        frecuenciaTurbo = c.boostClock.replace(" GHz", ""),
+                        cacheL3 = (c.cache ?: "").replace("MB", ""),
+                        tdpWatts = c.tdp.replace("W", ""),
+                        graficosIntegrados = c.integratedGraphics ?: "",
+                        soporteRam = c.ramSupport ?: ""
+                    )
+                    is Component.GPU -> ComponentFormState(
+                        tipo = "GPU",
+                        nombre = c.name,
+                        marca = c.brand,
+                        precioUsd = c.price.toString(),
+                        descripcion = c.description,
+                        imageUrl = c.imageUrl ?: "",
+                        chipset = c.chipset,
+                        vram = c.vram.replace("GB", ""),
+                        tipoVram = c.vramType,
+                        busMemoria = (c.memoryBus ?: "").replace("-bit", ""),
+                        frecuenciaBase = (c.baseClock ?: "").replace(" GHz", ""),
+                        frecuenciaBoost = (c.boostClock ?: "").replace(" GHz", ""),
+                        consumoWatts = c.consumptionWatts.replace("W", ""),
+                        fuenteRecomendada = c.recommendedPSU ?: "",
+                        versionPcie = c.pcieInterface ?: ""
+                    )
+                    is Component.Motherboard -> ComponentFormState(
+                        tipo = "Motherboard",
+                        nombre = c.name,
+                        marca = c.brand,
+                        precioUsd = c.price.toString(),
+                        descripcion = c.description,
+                        imageUrl = c.imageUrl ?: "",
+                        socket = c.socket,
+                        chipsetMobo = c.chipset,
+                        formato = c.format,
+                        tipoRam = c.ramType,
+                        velocidadRamMax = (c.maxRamSpeed ?: "").replace(" MHz", ""),
+                        slotsRam = c.ramSlots?.toString() ?: ""
+                    )
+                    is Component.RAM -> ComponentFormState(
+                        tipo = "RAM",
+                        nombre = c.name,
+                        marca = c.brand,
+                        precioUsd = c.price.toString(),
+                        descripcion = c.description,
+                        imageUrl = c.imageUrl ?: "",
+                        tipoRam2 = c.type,
+                        capacidadTotal = c.capacity,
+                        velocidad = c.speed.replace(" MHz", ""),
+                        latencia = c.latency,
+                        voltaje = (c.voltage ?: "").replace("V", "")
+                    )
+                    is Component.PSU -> ComponentFormState(
+                        tipo = "PSU",
+                        nombre = c.name,
+                        marca = c.brand,
+                        precioUsd = c.price.toString(),
+                        descripcion = c.description,
+                        imageUrl = c.imageUrl ?: "",
+                        potenciaWatts = c.wattage.toString(),
+                        certificacion = c.certification,
+                        tipoModular = c.modularity,
+                        ventilador = c.fanSize ?: "",
+                        protecciones = c.protection ?: ""
                     )
                 }
+                _uiState.update {
+                    it.copy(
+                        selectedComponent = c,
+                        showEditDialog = true,
+                        selectedImageUri = c.imageUrl,
+                        formState = form,
+                        navigateBack = false
+                    )
+                }
+            }
             AdminEvent.OnShowCreateDialog -> 
                 _uiState.update { it.copy(showCreateDialog = true, selectedImageUri = null) }
             AdminEvent.OnDismissDialog ->
@@ -181,31 +270,33 @@ class AdminViewModel @Inject constructor(
                 _uiState.update { it.copy(formState = updated) }
             }
             is AdminEvent.OnFieldChange -> {
-                // Reusing OnFormFieldChange logic for backward compatibility if needed
                 onEvent(AdminEvent.OnFormFieldChange(event.field, event.value))
             }
             AdminEvent.OnResetForm ->
                 _uiState.update {
-                    it.copy(formState = ComponentFormState(), navigateBack = false)
+                    it.copy(formState = ComponentFormState(), navigateBack = false, selectedComponent = null, selectedImageUri = null)
                 }
         }
     }
 
-    private fun buildComponentFromForm(): Component? {
+    internal fun buildComponentFromForm(): Component? {
         val f = _uiState.value.formState
         val precio = f.precioUsd.toDoubleOrNull()
             ?: return null
         if (f.nombre.isBlank() || f.marca.isBlank())
             return null
+        
+        val originalId = _uiState.value.selectedComponent?.id ?: 0
+        
         return when (f.tipo) {
             "CPU" -> Component.CPU(
-                id = 0, name = f.nombre, brand = f.marca,
+                id = originalId, name = f.nombre, brand = f.marca,
                 socket = f.socket, generation = f.generacion,
                 cores = f.nucleos.toIntOrNull() ?: 0,
                 threads = f.hilos.toIntOrNull() ?: 0,
-                baseClock = f.frecuenciaBase,
-                boostClock = f.frecuenciaTurbo,
-                cache = f.cacheL3.ifBlank { null },
+                baseClock = f.frecuenciaBase.withSuffixSpaced("GHz"),
+                boostClock = f.frecuenciaTurbo.withSuffixSpaced("GHz"),
+                cache = f.cacheL3.withSuffix("MB").ifBlank { null },
                 tdp = "${f.tdpWatts}W",
                 integratedGraphics = f.graficosIntegrados.ifBlank { null },
                 ramSupport = f.soporteRam.ifBlank { null },
@@ -214,24 +305,24 @@ class AdminViewModel @Inject constructor(
                 category = "Procesador"
             )
             "GPU" -> Component.GPU(
-                id = 0, name = f.nombre, brand = f.marca,
-                chipset = f.chipset, vram = f.vram,
+                id = originalId, name = f.nombre, brand = f.marca,
+                chipset = f.chipset, vram = f.vram.withSuffix("GB"),
                 vramType = f.tipoVram,
-                memoryBus = f.busMemoria.ifBlank { null },
-                baseClock = f.frecuenciaBase.ifBlank { null },
-                boostClock = f.frecuenciaTurbo.ifBlank { null }, // Adjusted to match FormState field if necessary
+                memoryBus = f.busMemoria.withSuffix("-bit").ifBlank { null },
+                baseClock = f.frecuenciaBase.withSuffixSpaced("GHz").ifBlank { null },
+                boostClock = f.frecuenciaBoost.withSuffixSpaced("GHz").ifBlank { null },
                 consumptionWatts = "${f.consumoWatts}W",
-                recommendedPSU = f.fuenteRecomendada.ifBlank { null },
+                recommendedPSU = f.fuenteRecomendada.withSuffix("W").ifBlank { null },
                 pcieInterface = f.versionPcie.ifBlank { null },
                 price = precio, description = f.descripcion,
                 imageUrl = f.imageUrl.ifBlank { null },
                 category = "Tarjeta Gráfica"
             )
             "Motherboard" -> Component.Motherboard(
-                id = 0, name = f.nombre, brand = f.marca,
+                id = originalId, name = f.nombre, brand = f.marca,
                 socket = f.socket, chipset = f.chipsetMobo,
                 format = f.formato, ramType = f.tipoRam,
-                maxRamSpeed = f.velocidadRamMax.ifBlank { null },
+                maxRamSpeed = f.velocidadRamMax.withSuffixSpaced("MHz").ifBlank { null },
                 ramSlots = f.slotsRam.toIntOrNull(),
                 maxRamCapacity = null, slotsM2 = 0,
                 price = precio, description = f.descripcion,
@@ -239,10 +330,11 @@ class AdminViewModel @Inject constructor(
                 category = "Placa Base"
             )
             "RAM" -> Component.RAM(
-                id = 0, name = f.nombre, brand = f.marca,
+                id = originalId, name = f.nombre, brand = f.marca,
                 type = f.tipoRam2, capacity = f.capacidadTotal,
-                speed = f.velocidad, latency = f.latencia,
-                voltage = f.voltaje.ifBlank { null },
+                speed = f.velocidad.withSuffixSpaced("MHz"), 
+                latency = f.latencia,
+                voltage = f.voltaje.withSuffix("V").ifBlank { null },
                 hasRGB = f.nombre.contains("RGB", ignoreCase = true),
                 price = precio, description = f.descripcion,
                 imageUrl = f.imageUrl.ifBlank { null },
@@ -250,7 +342,7 @@ class AdminViewModel @Inject constructor(
                 configuration = f.configuracion
             )
             "PSU" -> Component.PSU(
-                id = 0, name = f.nombre, brand = f.marca,
+                id = originalId, name = f.nombre, brand = f.marca,
                 wattage = f.potenciaWatts.toIntOrNull() ?: 0,
                 certification = f.certificacion,
                 modularity = f.tipoModular,
@@ -347,7 +439,8 @@ class AdminViewModel @Inject constructor(
                                 successMessage = "Actualizado", 
                                 showEditDialog = false,
                                 navigateBack = true,
-                                formState = ComponentFormState()
+                                formState = ComponentFormState(),
+                                selectedComponent = null
                             )
                         }
                         loadComponents()
