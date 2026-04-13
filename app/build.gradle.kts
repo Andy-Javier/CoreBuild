@@ -19,6 +19,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "ADMIN_PASSWORD", "\"123456\"")
+        buildConfigField("String", "ADMIN_EMAIL_1", "\"andernunez307@gmail.com\"")
+        buildConfigField("String", "ADMIN_EMAIL_2", "\"andyjavierrd@gmail.com\"")
     }
 
     signingConfigs {
@@ -50,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     lint {

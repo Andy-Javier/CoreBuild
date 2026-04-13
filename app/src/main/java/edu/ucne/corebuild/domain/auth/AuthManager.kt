@@ -1,5 +1,6 @@
 package edu.ucne.corebuild.domain.auth
 
+import edu.ucne.corebuild.BuildConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -7,10 +8,10 @@ import javax.inject.Singleton
 class AuthManager @Inject constructor() {
 
     private val adminEmails = setOf(
-        "andernunez307@gmail.com",
-        "andyjavierrd@gmail.com"
+        BuildConfig.ADMIN_EMAIL_1,
+        BuildConfig.ADMIN_EMAIL_2
     )
-    private val adminPassword = "123456"
+    private val adminPassword = BuildConfig.ADMIN_PASSWORD
 
     fun isAdmin(email: String): Boolean =
         email.trim().lowercase() in adminEmails
