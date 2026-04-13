@@ -74,8 +74,13 @@ class ComponentRepositoryImpl @Inject constructor(
             .onSuccess { list ->
                 val entities = list.map { dto ->
                     val domain = mapper(dto)
-                    val imageUrl = imageDeterminer(domain)
-                    domain.withImageUrl(imageUrl).toEntity()
+                    // SOLO aplicamos imagen por defecto si el componente NO tiene una imagen ya asignada (ej. de Cloudinary)
+                    val finalImageUrl = if (domain.imageUrl.isNullOrBlank()) {
+                        imageDeterminer(domain)
+                    } else {
+                        domain.imageUrl
+                    }
+                    domain.withImageUrl(finalImageUrl).toEntity()
                 }
                 dao.insertAll(entities)
             }
@@ -99,7 +104,7 @@ class ComponentRepositoryImpl @Inject constructor(
             is Component.RAM -> remoteDataSource.createRam(component.toDto())
             is Component.PSU -> remoteDataSource.createPsu(component.toDto())
         }
-        handleComponentResponse(result)
+        handleComponentResponse(result, component.imageUrl)
     }
 
     override suspend fun updateComponent(component: Component): Result<Unit> = runCatching {
@@ -110,10 +115,10 @@ class ComponentRepositoryImpl @Inject constructor(
             is Component.RAM -> remoteDataSource.updateRam(component.id - 3000, component.toDto())
             is Component.PSU -> remoteDataSource.updatePsu(component.id - 4000, component.toDto())
         }
-        handleComponentResponse(result)
+        handleComponentResponse(result, component.imageUrl)
     }
 
-    private suspend fun handleComponentResponse(response: Result<Any>) {
+    private suspend fun handleComponentResponse(response: Result<Any>, preferredImageUrl: String?) {
         response.onSuccess { dto ->
             val domain = when (dto) {
                 is CpuDto -> dto.toDomain()
@@ -123,7 +128,12 @@ class ComponentRepositoryImpl @Inject constructor(
                 is PsuDto -> dto.toDomain(dto.id + 4000)
                 else -> throw IllegalStateException("Tipo de DTO desconocido")
             }
-            dao.insertAll(listOf(domain.toEntity()))
+            // Mantenemos la imagen que el usuario subió si existe
+            val finalDomain = if (!preferredImageUrl.isNullOrBlank()) {
+                domain.withImageUrl(preferredImageUrl)
+            } else domain
+            
+            dao.insertAll(listOf(finalDomain.toEntity()))
         }.onFailure { throw it }
     }
 

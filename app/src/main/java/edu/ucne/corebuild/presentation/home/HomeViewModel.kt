@@ -3,6 +3,7 @@ package edu.ucne.corebuild.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.ucne.corebuild.domain.auth.AuthManager
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
@@ -10,6 +11,7 @@ import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.ComponentRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
+import edu.ucne.corebuild.domain.repository.UserRepository
 import edu.ucne.corebuild.domain.tracking.UserInteractionTracker
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import edu.ucne.corebuild.util.Resource
@@ -28,6 +30,8 @@ class HomeViewModel @Inject constructor(
     private val statsRepository: StatsRepository,
     private val cartRepository: CartRepository,
     private val favoriteRepository: FavoriteRepository,
+    private val userRepository: UserRepository,
+    private val authManager: AuthManager,
     private val recommendationEngine: RecommendationEngine,
     private val tracker: UserInteractionTracker
 ) : ViewModel() {
@@ -46,7 +50,7 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getComponentsUseCase().collect { result ->
-                if (result is Resource.Success) {
+                if (result is Resource.Success<List<Component>>) {
                     result.data?.let { components ->
                         if (components.isNotEmpty()) {
                             generateRandomBuild(components)
@@ -107,15 +111,10 @@ class HomeViewModel @Inject constructor(
         statsRepository.getTopRated(),
         favoriteRepository.getFavoriteComponents(),
         cartRepository.getCartItems()
-    ) { componentsRes, recently, top, favorites, cart ->
-        HomeDataGroup(
-            components = if (componentsRes is Resource.Success) componentsRes.data ?: emptyList() else emptyList(),
-            recentlyViewed = recently,
-            topRated = top,
-            favorites = favorites,
-            cartItems = cart,
-            isLoading = componentsRes is Resource.Loading
-        )
+    ) { c, r, t, f, ct ->
+        val components = if (c is Resource.Success) c.data ?: emptyList() else emptyList()
+        val isLoading = c is Resource.Loading
+        HomeDataGroup(components, r, t, f, ct, isLoading)
     }
 
     private val inputFlow = combine(
@@ -137,8 +136,9 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = combine(
         dataFlow,
         inputFlow,
-        uiLayersFlow
-    ) { data, inputs, ui ->
+        uiLayersFlow,
+        userRepository.getLoggedUser()
+    ) { data, inputs, ui, user ->
         val allFiltered = data.components.filter { component ->
             val matchesQuery = if (inputs.debouncedQuery.isBlank()) true 
                                else component.name.contains(inputs.debouncedQuery, ignoreCase = true)
@@ -169,6 +169,8 @@ class HomeViewModel @Inject constructor(
         val nvidia = data.components.filter { it is Component.GPU && (it.brand.contains("NVIDIA", ignoreCase = true) || it.name.contains("RTX", ignoreCase = true) || it.name.contains("GTX", ignoreCase = true)) }
         val radeon = data.components.filter { it is Component.GPU && (it.brand.contains("AMD", ignoreCase = true) || it.brand.contains("Radeon", ignoreCase = true) || it.name.contains("RX ", ignoreCase = true)) }
         
+        val isAdmin = user?.email?.let { authManager.isAdmin(it) } ?: false
+
         HomeUiState(
             components = data.components,
             filteredComponents = filtered,
@@ -183,7 +185,8 @@ class HomeViewModel @Inject constructor(
             isLoading = data.isLoading || ui.isLoading,
             featuredBuild = ui.featuredBuild,
             showBuildDialog = ui.showBuildDialog,
-            smartRecommendations = smartRecommendations
+            smartRecommendations = smartRecommendations,
+            isAdmin = isAdmin
         )
     }.stateIn(
         scope = viewModelScope,
@@ -292,6 +295,3 @@ private data class HomeUiLayersGroup(
     val featuredBuild: PredefinedBuild?,
     val showBuildDialog: Boolean
 )
-
-private fun <T1, T2, T3, T4, T5> quintuple(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5): Quintuple<T1, T2, T3, T4, T5> = Quintuple(t1, t2, t3, t4, t5)
-data class Quintuple<out T1, out T2, out T3, out T4, out T5>(val first: T1, val second: T2, val third: T3, val fourth: T4, val fifth: T5)

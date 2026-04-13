@@ -12,7 +12,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE isLogged = 1 LIMIT 1")
     fun getLoggedUser(): Flow<UserEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun register(user: UserEntity)
 
     @Update

@@ -3,13 +3,16 @@ package edu.ucne.corebuild.presentation.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.ucne.corebuild.domain.auth.AuthManager
 import edu.ucne.corebuild.domain.compatibility.CompatibilityEngine
 import edu.ucne.corebuild.domain.model.Component
 import edu.ucne.corebuild.domain.model.Order
+import edu.ucne.corebuild.domain.model.CartItem
 import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.FavoriteRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.StatsRepository
+import edu.ucne.corebuild.domain.repository.UserRepository
 import edu.ucne.corebuild.domain.use_case.GetComponentUseCase
 import edu.ucne.corebuild.domain.use_case.GetComponentsUseCase
 import edu.ucne.corebuild.util.Resource
@@ -25,6 +28,8 @@ class ProductDetailViewModel @Inject constructor(
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val favoriteRepository: FavoriteRepository,
+    private val userRepository: UserRepository,
+    private val authManager: AuthManager,
     private val statsRepository: StatsRepository,
     private val compatibilityEngine: CompatibilityEngine
 ) : ViewModel() {
@@ -71,8 +76,7 @@ class ProductDetailViewModel @Inject constructor(
         if (component is Component.RAM && allComponents.isNotEmpty()) {
             val baseName = extractBaseRamName(component.name)
             val allRams = allComponents.filterIsInstance<Component.RAM>()
-            val filtered = allRams.filter { extractBaseRamName(it.name) == baseName }
-            filtered
+            allRams.filter { extractBaseRamName(it.name) == baseName }
         } else {
             emptyList()
         }
@@ -83,17 +87,25 @@ class ProductDetailViewModel @Inject constructor(
         _isFavorite,
         _variants,
         cartRepository.getCartItems(),
-        combine(_isLoading, _snackbarMessage, _orderCompleted, _error) { a, b, c, d ->
-            listOf(a as Any?, b, c, d)
-        }
-    ) { component, isFav, variants, cartItems, opList ->
-        val loading = opList[0] as Boolean
-        val message = opList[1] as String?
-        val completed = opList[2] as Boolean
-        val error = opList[3] as String?
+        userRepository.getLoggedUser(),
+        _isLoading,
+        _snackbarMessage,
+        _orderCompleted,
+        _error
+    ) { args: Array<Any?> ->
+        val component = args[0] as Component?
+        val isFav = args[1] as Boolean
+        val variants = args[2] as List<Component>
+        val cartItems = args[3] as List<CartItem>
+        val user = args[4] as edu.ucne.corebuild.domain.model.User?
+        val loading = args[5] as Boolean
+        val message = args[6] as String?
+        val completed = args[7] as Boolean
+        val error = args[8] as String?
 
         val limit = component?.let { compatibilityEngine.getLimitForCategory(it) } ?: 3
         val currentInCart = cartItems.find { it.component.id == component?.id }?.quantity ?: 0
+        val isAdmin = user?.email?.let { authManager.isAdmin(it) } ?: false
 
         ProductDetailUiState(
             component = component,
@@ -104,7 +116,8 @@ class ProductDetailViewModel @Inject constructor(
             error = error,
             quantityLimit = limit,
             currentInCart = currentInCart,
-            orderCompleted = completed
+            orderCompleted = completed,
+            isAdmin = isAdmin
         )
     }.stateIn(
         scope = viewModelScope,

@@ -18,7 +18,8 @@ data class HomeUiState(
     val showBuildDialog: Boolean = false,
     val navigateToCart: Boolean = false,
     val error: String? = null,
-    val smartRecommendations: List<Component> = emptyList()
+    val smartRecommendations: List<Component> = emptyList(),
+    val isAdmin: Boolean = false
 )
 
 data class PredefinedBuild(

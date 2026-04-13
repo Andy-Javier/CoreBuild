@@ -33,8 +33,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         user = user,
                         isLogged = user != null,
-                        isAdmin = if (user != null)
-                            authManager.isAdmin(user.email) else false,
+                        isAdmin = user != null && authManager.isAdmin(user.email),
                         isCheckingSession = false
                     )
                 }
@@ -73,9 +72,14 @@ class AuthViewModel @Inject constructor(
             // Paso 1: Verificar si es admin con AuthManager
             if (authManager.validateAdminCredentials(email, pass)) {
                 val adminUser = User(
-                    name = if (email.contains("andernunez")) "Anderson Nuñez" else "Andy Javier",
+                    name = if (email.lowercase().contains("andernunez")) "Anderson Nuñez" else "Andy Javier",
                     email = email.trim().lowercase()
                 )
+                
+                // Persistencia local para que otras partes de la app lo reconozcan
+                userRepository.register(adminUser, pass)
+                userRepository.login(adminUser.email, pass)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,

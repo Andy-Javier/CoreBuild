@@ -12,9 +12,10 @@ import edu.ucne.corebuild.data.local.entity.*
         UserEntity::class,
         FavoriteEntity::class,
         CartEntity::class,
-        StatsEntity::class
+        StatsEntity::class,
+        AdminLogEntity::class
     ],
-    version = 222,
+    version = 226,
     exportSchema = false
 )
 abstract class CoreBuildDatabase : RoomDatabase() {
@@ -24,4 +25,5 @@ abstract class CoreBuildDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
     abstract fun cartDao(): CartDao
     abstract fun statsDao(): StatsDao
+    abstract fun adminLogDao(): AdminLogDao
 }

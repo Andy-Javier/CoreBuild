@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.SettingsSuggest
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +37,9 @@ import androidx.navigation.toRoute
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dagger.hilt.android.AndroidEntryPoint
+import edu.ucne.corebuild.presentation.admin.AdminScreen
+import edu.ucne.corebuild.presentation.admin.ComponentFormScreen
+import edu.ucne.corebuild.presentation.admin.logs.LogsScreen
 import edu.ucne.corebuild.presentation.auth.AuthViewModel
 import edu.ucne.corebuild.presentation.auth.LoginScreen
 import edu.ucne.corebuild.presentation.auth.ProfileScreen
@@ -70,7 +71,7 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
-                    onResult = { isGranted -> }
+                    onResult = { }
                 )
                 LaunchedEffect(Unit) {
                     launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -100,7 +101,6 @@ fun CoreBuildAppContent(
     val currentRoute = navBackStackEntry?.destination?.route
     val authUiState by authViewModel.uiState.collectAsState()
     val context = LocalContext.current
-
 
     val isAuthScreen = currentRoute?.contains("Login") == true || currentRoute?.contains("Register") == true
 
@@ -250,6 +250,33 @@ fun CoreBuildAppContent(
                         navController.navigate(Screen.BuildSelector)
                     }
                 )
+                if (authUiState.isAdmin) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+                    Text(
+                        "Administración",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    DrawerItem(
+                        icon = Icons.Outlined.AdminPanelSettings,
+                        label = "Panel Admin",
+                        selected = currentRoute?.contains("AdminPanel") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Screen.AdminPanel)
+                        }
+                    )
+                    DrawerItem(
+                        icon = Icons.Outlined.History,
+                        label = "Historial de cambios",
+                        selected = currentRoute?.contains("AdminLogs") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Screen.AdminLogs)
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
                 Row(
@@ -287,6 +314,7 @@ fun CoreBuildAppContent(
             }
             composable<Screen.Login> {
                 LoginScreen(
+                    viewModel = authViewModel,
                     onLoginSuccess = { navController.popBackStack() },
                     onRegisterClick = { navController.navigate(Screen.Register) },
                     onBackClick = { navController.popBackStack() }
@@ -402,6 +430,19 @@ fun CoreBuildAppContent(
                     onComponentClick = { id -> navController.navigate(Screen.Detail(id)) },
                     onCartClick = { navController.navigate(Screen.Cart) }
                 )
+            }
+            composable<Screen.AdminPanel> {
+                AdminScreen(
+                    onLogsClick = { navController.navigate(Screen.AdminLogs) },
+                    onAddNewClick = { navController.navigate(Screen.ComponentForm) },
+                    onBack = { navController.navigateUp() }
+                )
+            }
+            composable<Screen.AdminLogs> {
+                LogsScreen(onBack = { navController.navigateUp() })
+            }
+            composable<Screen.ComponentForm> {
+                ComponentFormScreen(onBack = { navController.navigateUp() })
             }
         }
     }

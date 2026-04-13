@@ -12,5 +12,6 @@ data class ProductDetailUiState(
     val navigateToCart: Boolean = false,
     val quantityLimit: Int = 1,
     val currentInCart: Int = 0,
-    val orderCompleted: Boolean = false
+    val orderCompleted: Boolean = false,
+    val isAdmin: Boolean = false
 )

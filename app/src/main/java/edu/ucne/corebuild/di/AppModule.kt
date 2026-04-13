@@ -22,6 +22,8 @@ import edu.ucne.corebuild.domain.recommendation.BuildRecommender
 import edu.ucne.corebuild.domain.smartbuilder.SmartBuildGenerator
 import edu.ucne.corebuild.domain.recommendation.RecommendationEngine
 import edu.ucne.corebuild.domain.auth.AuthManager
+import edu.ucne.corebuild.domain.logs.AdminLogRepository
+import edu.ucne.corebuild.data.remote.image.ImageUploader
 import edu.ucne.corebuild.presentation.notifications.NotificationHelper
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -62,6 +64,9 @@ object AppModule {
     fun provideStatsDao(db: CoreBuildDatabase): StatsDao = db.statsDao()
 
     @Provides
+    fun provideAdminLogDao(db: CoreBuildDatabase): AdminLogDao = db.adminLogDao()
+
+    @Provides
     @Singleton
     fun provideComponentRepository(
         dao: ComponentDao,
@@ -79,6 +84,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideFavoriteRepository(favoriteDao: FavoriteDao): FavoriteRepository = FavoriteRepositoryImpl(favoriteDao)
+
+    @Provides
+    @Singleton
+    fun provideAdminLogRepository(dao: AdminLogDao): AdminLogRepository = AdminLogRepositoryImpl(dao)
 
     @Provides
     @Singleton
@@ -155,4 +164,9 @@ object AppModule {
     fun provideNetworkManager(
         @ApplicationContext context: Context
     ): NetworkManager = NetworkManager(context)
+
+    @Provides
+    @Singleton
+    fun provideImageUploader(moshi: Moshi): ImageUploader =
+        ImageUploader(moshi)
 }

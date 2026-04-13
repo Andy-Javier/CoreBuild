@@ -1,0 +1,57 @@
+package edu.ucne.corebuild.presentation.admin
+
+data class ComponentFormState(
+    val tipo: String = "CPU",
+    val nombre: String = "",
+    val marca: String = "",
+    val precioUsd: String = "",
+    val descripcion: String = "",
+    val imageUrl: String = "",
+    // CPU
+    val socket: String = "",
+    val generacion: String = "",
+    val nucleos: String = "",
+    val hilos: String = "",
+    val frecuenciaBase: String = "",
+    val frecuenciaTurbo: String = "",
+    val cacheL3: String = "",
+    val tdpWatts: String = "",
+    val graficosIntegrados: String = "",
+    val soporteRam: String = "",
+    // GPU
+    val chipset: String = "",
+    val vram: String = "",
+    val tipoVram: String = "",
+    val busMemoria: String = "",
+    val frecuenciaBoost: String = "",
+    val consumoWatts: String = "",
+    val fuenteRecomendada: String = "",
+    val conectoresEnergia: String = "",
+    val versionPcie: String = "",
+    // Motherboard
+    val chipsetMobo: String = "",
+    val formato: String = "",
+    val compatibilidadCpu: String = "",
+    val tipoRam: String = "",
+    val velocidadRamMax: String = "",
+    val slotsRam: String = "",
+    val almacenamiento: String = "",
+    val puertos: String = "",
+    val conectividad: String = "",
+    // RAM
+    val tipoRam2: String = "",
+    val capacidadTotal: String = "",
+    val configuracion: String = "",
+    val velocidad: String = "",
+    val latencia: String = "",
+    val voltaje: String = "",
+    val perfil: String = "",
+    // PSU
+    val potenciaWatts: String = "",
+    val certificacion: String = "",
+    val tipoModular: String = "",
+    val eficiencia: String = "",
+    val ventilador: String = "",
+    val protecciones: String = "",
+    val conectores: String = ""
+)
