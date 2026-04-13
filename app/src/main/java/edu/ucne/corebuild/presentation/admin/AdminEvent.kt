@@ -8,9 +8,7 @@ sealed interface AdminEvent {
     data class OnFieldChange(
         val field: String, val value: String
     ) : AdminEvent
-    data class OnCreateComponent(
-        val component: Component
-    ) : AdminEvent
+    data object OnCreateComponent : AdminEvent
     data class OnUpdateComponent(
         val component: Component
     ) : AdminEvent
