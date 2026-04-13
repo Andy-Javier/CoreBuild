@@ -104,24 +104,34 @@ fun SearchBody(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (uiState.filteredComponents.isEmpty()) {
-                Text(
-                    text = "No se encontraron resultados",
-                    modifier = Modifier.align(Alignment.Center)
+            SearchResults(
+                results = uiState.filteredComponents,
+                onComponentClick = onComponentClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchResults(
+    results: List<Component>,
+    onComponentClick: (Int) -> Unit
+) {
+    if (results.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(text = "No se encontraron resultados")
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(results) { component ->
+                ComponentSearchItem(
+                    component = component,
+                    onClick = { onComponentClick(component.id) }
                 )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(uiState.filteredComponents) { component ->
-                        ComponentSearchItem(
-                            component = component,
-                            onClick = { onComponentClick(component.id) }
-                        )
-                    }
-                }
             }
         }
     }
