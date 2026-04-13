@@ -11,6 +11,7 @@ import edu.ucne.corebuild.domain.repository.CartRepository
 import edu.ucne.corebuild.domain.repository.OrderRepository
 import edu.ucne.corebuild.domain.repository.UserRepository
 import edu.ucne.corebuild.presentation.notifications.NotificationHelper
+import android.util.Log
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -117,14 +118,15 @@ class CartViewModel @Inject constructor(
                                 _showOrderConfirmation.value = false
                             }
                         } catch (e: Exception) {
+                            Log.e("CartViewModel", "Error al procesar el pedido: ${e.message}")
                             _snackbarEvent.emit("Error al procesar el pedido")
                         }
                     } else {
                         _snackbarEvent.emit("El carrito está vacío")
                     }
                 }
-                CartEvent.DismissSnackbar -> { }
-                CartEvent.ResetNavigation -> { }
+                CartEvent.DismissSnackbar -> { /* No action needed */ }
+                CartEvent.ResetNavigation -> { /* No action needed */ }
             }
         }
     }
