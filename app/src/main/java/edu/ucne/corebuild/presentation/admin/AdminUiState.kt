@@ -14,5 +14,7 @@ data class AdminUiState(
     val showCreateDialog: Boolean = false,
     val showEditDialog: Boolean = false,
     val selectedImageUri: String? = null,
-    val isUploadingImage: Boolean = false
+    val isUploadingImage: Boolean = false,
+    val formState: ComponentFormState = ComponentFormState(),
+    val navigateBack: Boolean = false
 )
