@@ -15,6 +15,9 @@ interface ComponentDao {
     @Query("SELECT * FROM components WHERE id = :id")
     fun getComponentById(id: Int): Flow<ComponentEntity?>
 
+    @Query("SELECT * FROM components WHERE id = :id")
+    suspend fun getByIdSync(id: Int): ComponentEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(components: List<ComponentEntity>)
 
