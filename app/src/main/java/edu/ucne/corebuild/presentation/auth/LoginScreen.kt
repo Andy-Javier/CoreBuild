@@ -23,8 +23,7 @@ import edu.ucne.corebuild.ui.theme.CoreBuildTheme
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit,
-    onRegisterClick: () -> Unit,
-    onBackClick: () -> Unit
+    onRegisterClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(uiState.isLogged) {
@@ -79,22 +78,11 @@ fun LoginBody(
                 singleLine = true
             )
             Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
+            PasswordField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(
-                            if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                showPassword = showPassword,
+                onToggleVisibility = { showPassword = !showPassword }
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
@@ -115,15 +103,47 @@ fun LoginBody(
             TextButton(onClick = onRegisterClick) {
                 Text("¿No tienes cuenta? Regístrate")
             }
-            if (uiState.error != null) {
+            uiState.error?.let { error ->
                 Text(
-                    text = uiState.error ?: "",
+                    text = error,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
         }
     }
+}
+
+@Composable
+fun PasswordField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    showPassword: Boolean,
+    onToggleVisibility: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text("Contraseña") },
+        leadingIcon = {
+            Icon(Icons.Default.Lock, null)
+        },
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    if (showPassword)
+                        Icons.Default.Visibility
+                    else Icons.Default.VisibilityOff,
+                    contentDescription = null
+                )
+            }
+        },
+        visualTransformation = if (showPassword)
+            VisualTransformation.None
+        else PasswordVisualTransformation(),
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
 }
 
 @Preview(showBackground = true)
