@@ -11,7 +11,7 @@ data class Order(
 )
 
 enum class OrderMode {
-    CREATED, ENVIADO
+    CREATED, ENVIADO, ENTREGADO
 }
 
 typealias OrderStatus = OrderMode
