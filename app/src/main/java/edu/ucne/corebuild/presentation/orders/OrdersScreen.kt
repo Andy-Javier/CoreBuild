@@ -36,7 +36,6 @@ fun OrdersScreen(
 
     OrdersBody(
         state = state,
-        onEvent = viewModel::onEvent,
         onOrderClick = onOrderClick,
         onMenuClick = onMenuClick
     )
@@ -46,7 +45,6 @@ fun OrdersScreen(
 @Composable
 fun OrdersBody(
     state: OrdersUiState,
-    onEvent: (OrdersEvent) -> Unit,
     onOrderClick: (Int) -> Unit,
     onMenuClick: () -> Unit
 ) {
@@ -195,7 +193,6 @@ fun OrdersScreenPreview() {
     CoreBuildTheme {
         OrdersBody(
             state = OrdersUiState(),
-            onEvent = {},
             onOrderClick = {},
             onMenuClick = {}
         )
