@@ -2,6 +2,9 @@
 
 **CoreBuild** es una plataforma avanzada de Android diseñada para entusiastas del hardware, gamers y ensambladores profesionales. A diferencia de un e-commerce convencional, CoreBuild integra **motores de cálculo avanzados** para garantizar que cada componente sea técnica y económicamente viable dentro de un ecosistema de alto rendimiento.
 
+<img width="250" height="2224" alt="Screenshot_20260415_203300_CoreBuild" src="https://github.com/user-attachments/assets/766ef817-d626-40e4-9169-7f6af7092e11" />
+
+
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-0095D5?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
@@ -18,10 +21,18 @@
 ### 👤 Experiencia del Usuario
 - 🛒 **Gestión de Carrito Inteligente**: No es solo una lista de compras. Analiza en tiempo real la compatibilidad (Socket, TDP, tipo de RAM) y genera un **Build Score** dinámico basado en el balance de calidad/precio.
 - 📉 **Calculadora de Cuello de Botella (Bottleneck)**: Algoritmo predictivo que identifica si el procesador o la gráfica limitan el rendimiento mutuo según la resolución seleccionada (1080p, 1440p, 4K).
+  
+<img width="250" height="2224" alt="Screenshot_20260415_203621_CoreBuild" src="https://github.com/user-attachments/assets/1e787397-9ae8-4199-9f81-9d28b8368608" />
+
 - 🎮 **Simulador de FPS**: Predicción de rendimiento en cuadros por segundo para títulos AAA populares (Cyberpunk 2077, GTA V, Valorant) utilizando modelos de benchmarking sintético.
+
+<img width="250" height="2224" alt="Screenshot_20260415_203506_CoreBuild" src="https://github.com/user-attachments/assets/5a80e409-a548-4864-9296-17997cb326f6" />
+
 - 🧠 **Smart Builder**: Generador automático de presupuestos optimizados. El usuario elige un componente "ancla" (ej. una RTX 4070) y el sistema selecciona automáticamente el resto de piezas para maximizar el rendimiento.
 - 🔍 **Comparador Pro**: Interfaz técnica para comparar especificaciones detalladas (Caché, VRAM, frecuencias, TDP) de dos componentes lado a lado con visualización de barras de potencia.
 - 🎯 **Recomendador IA por Presupuesto**: Encuentra la mejor configuración posible ajustándose estrictamente a un límite de gasto definido por el usuario.
+
+<img width="250" height="2680" alt="Screenshot_20260415_203603_CoreBuild" src="https://github.com/user-attachments/assets/9207788e-e344-447e-ae32-7d66bd2c46b8" />
 
 ### 🛡️ Módulo de Administración (Panel de Control)
 - **Control Total (CRUD)**: Gestión completa de la base de datos de hardware (CPUs, GPUs, Placas Base, RAMs, PSUs).
